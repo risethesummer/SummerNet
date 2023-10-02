@@ -3,7 +3,8 @@ using SummerNet.Realtime.Data;
 
 namespace SummerNet.Realtime.Controllers.Handlers.Interfaces;
 
-public interface IMatchController<TMatchData, TPlayerIndex, TPlayer> : IMessageDistributor<TPlayerIndex> 
+public interface IMatchController<TMatchData, TPlayerIndex, TPlayer> : 
+    IMessageDistributor<TPlayerIndex>, IMessageReceiver<TPlayerIndex>
     where TPlayer : PlayerData<TPlayerIndex>
     where TMatchData : MatchData<TPlayerIndex, TPlayer>
 {

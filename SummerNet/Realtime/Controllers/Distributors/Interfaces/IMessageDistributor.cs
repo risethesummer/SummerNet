@@ -1,7 +1,9 @@
-﻿namespace SummerNet.Realtime.Controllers.Distributors.Interfaces;
+﻿using SummerNet.Realtime.Networks;
+
+namespace SummerNet.Realtime.Controllers.Distributors.Interfaces;
 
 public interface IMessageDistributor<in TPlayerIndex>
 {
-    void BroadcastMessage<T>(uint opcode, T message);
-    void SendMessage<T>(uint opcode, TPlayerIndex target, T message);
+    void BroadcastMessage<T>(NetworkMessage<T> msg) where T : unmanaged;
+    void SendMessage<T>(TPlayerIndex target, NetworkMessage<T> msg) where T : unmanaged;
 }

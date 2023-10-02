@@ -6,6 +6,11 @@ public interface IMatchJoinHandler<TMatchData, TPlayerIndex, TPlayer>
     where TPlayer : PlayerData<TPlayerIndex>
     where TMatchData : MatchData<TPlayerIndex, TPlayer>
 {
-    void OnJoin(IMatchController<TMatchData, TPlayerIndex, TPlayer> matchController, 
-        TMatchData matchData, TPlayer playerData, int tick);
+    /// <summary>
+    /// </summary>
+    /// <param name="matchController"></param>
+    /// <param name="playerData"></param>
+    /// <param name="tick"></param>
+    /// <returns>Should add the player into the match</returns>
+    Task<bool> OnJoin(IMatchController<TMatchData, TPlayerIndex, TPlayer> matchController, TPlayer playerData, int tick);
 }
