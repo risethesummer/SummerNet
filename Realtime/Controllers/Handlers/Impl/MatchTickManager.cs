@@ -16,15 +16,7 @@ internal partial class MatchTickManager<TMatchData, TPlayerIndex, TPlayer>
     // Generate all message handlers of tick
     // private readonly IEnumerable<IMatchMessageHandler<>> _tickHandlers;
     //private partial Task SendMessage(CancellationToken cancellationToken);
-    private void ReceiveMessages(CancellationToken cancellationToken)
-    {
-        int order = 0;
-        foreach (var message in _matchRunner.FlushReceivedMessages())
-        {
-            ReceiveMessage(message, order);
-            order++;
-        }
-    }
+
 
     public struct MyMessage : INetworkPayload
     {
@@ -32,14 +24,20 @@ internal partial class MatchTickManager<TMatchData, TPlayerIndex, TPlayer>
     }
     // Generated
     private readonly IEnumerable<IMatchMessageHandler<MyMessage, TMatchData, TPlayerIndex, TPlayer>>
-        _myMessageHandlers;
-    private void ReceiveMessage(in NetworkMessage<TPlayerIndex, INetworkPayload> message, in int order)
+        _myMessageHandlers;    
+    private readonly IEnumerable<IMatchMessageAsyncHandler<MyMessage, TMatchData, TPlayerIndex, TPlayer>>
+        _myMessageAsyncHandlers;
+    private async ValueTask ReceiveMessages(CancellationToken cancellationToken)
     {
-        switch (message.Opcode)
+        int order = 0;
+        var tick = _matchTickCounter.Tick;
+        foreach (var message in _matchRunner.FlushReceivedMessages())
         {
-            case 0:
+            if (cancellationToken.IsCancellationRequested)
+                return;
+            switch (message.Opcode)
             {
-                foreach (var handler in _myMessageHandlers)
+                case 0:
                 {
                     var msg = new NetworkMessage<TPlayerIndex, MyMessage>
                     {
@@ -49,10 +47,14 @@ internal partial class MatchTickManager<TMatchData, TPlayerIndex, TPlayer>
                         Target = message.Target,
                         MessageType = message.MessageType
                     };
-                    handler.OnMessage(_matchRunner, _matchTickCounter.Tick, order, msg);
+                    foreach (var handler in _myMessageHandlers)
+                        handler.OnMessage(_matchRunner, tick, order, msg);
+                    foreach (var handler in _myMessageAsyncHandlers)
+                        await handler.OnMessage(_matchRunner, tick, order, msg);
+                    break;
                 }
-                break;
             }
+            order++;
         }
     }
     //
@@ -68,7 +70,7 @@ internal partial class MatchTickManager<TMatchData, TPlayerIndex, TPlayer>
         await _matchRunner.StartFlushingReceivedMessages(token).ConfigureAwait(false);
         foreach (var handler in _tickHandlers)
             handler.OnStartTick(matchRunner, tick);
-        ReceiveMessages(token);
+        await ReceiveMessages(token);
         await SendMessages(token);
         foreach (var handler in _tickHandlers)
             handler.OnEndTick(matchRunner, tick);
