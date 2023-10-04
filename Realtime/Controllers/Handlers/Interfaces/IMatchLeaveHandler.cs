@@ -8,9 +8,9 @@ public interface IMatchLeaveHandler<TMatchData, TPlayerIndex, TPlayer>
 {
     /// <summary>
     /// </summary>
-    /// <param name="matchController"></param>
+    /// <param name="matchRunner"></param>
     /// <param name="playerData"></param>
     /// <param name="tick"></param>
     /// <returns>Should remove the player from the match</returns>
-    Task<bool> OnLeave(IMatchController<TMatchData, TPlayerIndex, TPlayer> matchController, TPlayer playerData, int tick);
+    ValueTask<bool> OnLeave(IMatchRunner<TMatchData, TPlayerIndex, TPlayer> matchRunner, TPlayer playerData, int tick);
 }

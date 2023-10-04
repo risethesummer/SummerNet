@@ -1,11 +1,10 @@
-﻿using Realtime.Controllers.Distributors.Interfaces;
+﻿using Realtime.Controllers.Transporters.Interfaces;
 using Realtime.Data;
 
 namespace Realtime.Controllers.Handlers.Interfaces;
 
-public interface IMatchController<TMatchData, TPlayerIndex, TPlayer> : 
-    IMessageDistributor<TPlayerIndex>, IMessageReceiver<TPlayerIndex>
-    where TPlayer : PlayerData<TPlayerIndex>
+public interface IMatchRunner<TMatchData, TPlayerIndex, TPlayer> : 
+    ITransporter<TPlayerIndex, TPlayer> where TPlayer : PlayerData<TPlayerIndex>
     where TMatchData : MatchData<TPlayerIndex, TPlayer>
 {
     TMatchData MatchData { get; }
@@ -14,7 +13,6 @@ public interface IMatchController<TMatchData, TPlayerIndex, TPlayer> :
     void RegisterMatchLeaveHandler(IMatchLeaveHandler<TMatchData, TPlayerIndex, TPlayer> handler);
     void RegisterMatchTickHandler(IMatchTickHandler<TMatchData, TPlayerIndex, TPlayer> handler);
     void RegisterMatchShutdownHandler(IMatchShutdownHandler<TMatchData, TPlayerIndex, TPlayer> handler);
-    void KickPlayer(TPlayerIndex target);
-    void AddPlayer(TPlayer playerData);
-    Task<TMatchData> Shutdown();
+    ValueTask<TMatchData> StartMatch();
+    ValueTask<TMatchData> Shutdown();
 }

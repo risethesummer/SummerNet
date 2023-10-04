@@ -1,13 +1,30 @@
 ﻿namespace Realtime.Networks;
 
-public struct NetworkMessage<T> where T : unmanaged
+public struct NetworkMessage<TPlayerIndex, TData> where TData : INetworkPayload
 {
-    public uint Opcode { get; init; }
-    public T Value { get; init; }
+    public ushort Opcode { get; init; }
+    public TData Payload { get; init; }
+    public TPlayerIndex Owner { get; init; }
+    public TPlayerIndex Target { get; init; }
+    public MessageType MessageType { get; init; }
 }
-public struct NetworkMessage<TPlayerIndex, TData> where TData : unmanaged
+
+
+public enum MessageType
 {
-    public NetworkMessage<TData> Payload;
-    public TPlayerIndex Owner;
-    public TPlayerIndex Target;
+    ServerToClient, ClientToSever, Broadcast, 
+}
+
+public interface INetworkPayload
+{
+    // ushort PayloadId { get; }
+}
+
+// Id => Length
+// Data
+public struct SentMessage<TPlayerIndex>
+{
+    public MessageType MessageType { get; init; }
+    public TPlayerIndex Target { get; init; }
+    public byte[] Data { get; init; }
 }

@@ -9,7 +9,7 @@ public interface IMatchInitHandler<TMatchData, TPlayerIndex, TPlayer>
     /// <summary>
     /// 
     /// </summary>
-    /// <param name="matchController"></param>
+    /// <param name="matchRunner"></param>
     /// <returns>Is the match initialized successfully or not (false means ending the match)</returns>
-    Task<bool> OnInitialize(IMatchController<TMatchData, TPlayerIndex, TPlayer> matchController);
+    ValueTask<bool> OnInitialize(IMatchRunner<TMatchData, TPlayerIndex, TPlayer> matchRunner);
 }

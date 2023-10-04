@@ -1,20 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <OutputType>Exe</OutputType>
+        <OutputType>Library</OutputType>
         <TargetFramework>net7.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-
-    <ItemGroup>
-      <Folder Include="Controllers\Distributors\Impl\" />
-    </ItemGroup>
-
     </PropertyGroup>
 
-
-
-
+    <ItemGroup>
+        <PackageReference Include="MemoryPack" Version="1.9.16" />
+    </ItemGroup>
 
 
 

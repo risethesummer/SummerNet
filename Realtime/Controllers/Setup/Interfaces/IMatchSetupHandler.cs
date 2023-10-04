@@ -9,5 +9,5 @@ public interface IMatchSetupHandler<TMatchData, TPlayerIndex, TPlayer>
     where TMatchData : MatchData<TPlayerIndex, TPlayer>
 {
     Task<IMatchDataProvider<TMatchData, TPlayerIndex, TPlayer>> OnSetup(
-        IMatchController<TMatchData, TPlayerIndex, TPlayer> machController);
+        IMatchRunner<TMatchData, TPlayerIndex, TPlayer> machRunner);
 }

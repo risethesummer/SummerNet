@@ -8,9 +8,9 @@ public interface IMatchJoinHandler<TMatchData, TPlayerIndex, TPlayer>
 {
     /// <summary>
     /// </summary>
-    /// <param name="matchController"></param>
+    /// <param name="matchRunner"></param>
     /// <param name="playerData"></param>
     /// <param name="tick"></param>
-    /// <returns>Should add the player into the match</returns>
-    Task<bool> OnJoin(IMatchController<TMatchData, TPlayerIndex, TPlayer> matchController, TPlayer playerData, int tick);
+    /// <returns>The player data to be added (null to refuse player)</returns>
+    ValueTask<TPlayer> OnJoin(IMatchRunner<TMatchData, TPlayerIndex, TPlayer> matchRunner, TPlayer playerData, int tick);
 }
