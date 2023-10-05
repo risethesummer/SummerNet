@@ -1,10 +1,12 @@
 ﻿using Realtime.Data;
+using Realtime.Networks;
 
 namespace Realtime.Controllers.Handlers.Interfaces;
 
 public interface IMatchJoinHandler<TMatchData, TPlayerIndex, TPlayer> 
     where TPlayer : PlayerData<TPlayerIndex>
     where TMatchData : MatchData<TPlayerIndex, TPlayer>
+    where TPlayerIndex : unmanaged, INetworkIndex
 {
     /// <summary>
     /// </summary>

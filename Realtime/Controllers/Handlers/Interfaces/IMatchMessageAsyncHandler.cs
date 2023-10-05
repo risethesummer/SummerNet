@@ -7,6 +7,7 @@ public interface IMatchMessageAsyncHandler<TMessageData, TMatchData, TPlayerInde
     where TMessageData : unmanaged, INetworkPayload
     where TPlayer : PlayerData<TPlayerIndex>
     where TMatchData : MatchData<TPlayerIndex, TPlayer>
+    where TPlayerIndex : unmanaged, INetworkIndex
 {
     ValueTask OnMessage(IMatchRunner<TMatchData, TPlayerIndex, TPlayer> matchRunner, in int tick, in int messageOrderInTick, 
         in NetworkMessage<TPlayerIndex, TMessageData> message);

@@ -7,6 +7,7 @@ namespace Realtime.Controllers.Handlers.Impl;
 internal partial class MatchTickManager<TMatchData, TPlayerIndex, TPlayer> 
     where TPlayer : PlayerData<TPlayerIndex>
     where TMatchData : MatchData<TPlayerIndex, TPlayer>
+    where TPlayerIndex : unmanaged, INetworkIndex
 {
     private readonly IEnumerable<IMatchTickHandler<TMatchData, TPlayerIndex, TPlayer>> _tickHandlers;
     private readonly IMatchRunner<TMatchData, TPlayerIndex, TPlayer> _matchRunner;
@@ -31,7 +32,7 @@ internal partial class MatchTickManager<TMatchData, TPlayerIndex, TPlayer>
     {
         int order = 0;
         var tick = _matchTickCounter.Tick;
-        foreach (var message in _matchRunner.FlushReceivedMessages())
+        await foreach (var message in  _matchRunner.FlushReceivedMessagesAsync(cancellationToken))
         {
             if (cancellationToken.IsCancellationRequested)
                 return;
@@ -67,7 +68,7 @@ internal partial class MatchTickManager<TMatchData, TPlayerIndex, TPlayer>
         CancellationToken token)
     {
         var tick = _matchTickCounter.Tick;
-        await _matchRunner.StartFlushingReceivedMessages(token).ConfigureAwait(false);
+        await _matchRunner.StartFlushingReceivedMessagesAsync(token).ConfigureAwait(false);
         foreach (var handler in _tickHandlers)
             handler.OnStartTick(matchRunner, tick);
         await ReceiveMessages(token);
@@ -75,5 +76,6 @@ internal partial class MatchTickManager<TMatchData, TPlayerIndex, TPlayer>
         foreach (var handler in _tickHandlers)
             handler.OnEndTick(matchRunner, tick);
         await _matchTickCounter.EndTick(token).ConfigureAwait(false);
+        _matchRunner.Clear();
     }
 }

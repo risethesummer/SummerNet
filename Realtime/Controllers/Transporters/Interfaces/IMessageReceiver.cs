@@ -1,11 +1,11 @@
-﻿using Realtime.Controllers.Transporters.Impl;
-using Realtime.Networks;
+﻿using Realtime.Networks;
 
 namespace Realtime.Controllers.Transporters.Interfaces;
 
-public interface IMessageReceiver<TPlayerIndex>
+public interface IMessageReceiver<TPlayerIndex> where TPlayerIndex : unmanaged, INetworkIndex
 {
     // Task<T> WaitForMessage<T>(uint opcode, int count);
-    IEnumerable<NetworkMessage<TPlayerIndex, INetworkPayload>> FlushReceivedMessages();
-    ValueTask StartFlushingReceivedMessages(CancellationToken cancellationToken);
+    IAsyncEnumerable<NetworkMessage<TPlayerIndex, INetworkPayload>> FlushReceivedMessagesAsync(
+        CancellationToken cancellationToken);
+    ValueTask StartFlushingReceivedMessagesAsync(CancellationToken cancellationToken);
 }

@@ -1,5 +1,6 @@
 ﻿using Realtime.Controllers.Handlers.Interfaces;
 using Realtime.Data;
+using Realtime.Networks;
 
 namespace Realtime.Controllers.Setup.Interfaces;
 
@@ -7,6 +8,7 @@ namespace Realtime.Controllers.Setup.Interfaces;
 public interface IMatchSetupHandler<TMatchData, TPlayerIndex, TPlayer>
     where TPlayer : PlayerData<TPlayerIndex>
     where TMatchData : MatchData<TPlayerIndex, TPlayer>
+    where TPlayerIndex : unmanaged, INetworkIndex
 {
     Task<IMatchDataProvider<TMatchData, TPlayerIndex, TPlayer>> OnSetup(
         IMatchRunner<TMatchData, TPlayerIndex, TPlayer> machRunner);

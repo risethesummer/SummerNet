@@ -2,6 +2,7 @@
 
 // Add before NetworkData
 // All filter will be registered manually
+[AttributeUsage(AttributeTargets.Struct)]
 public class MessageFilterAttribute : Attribute
 {
     public readonly Type Filter;

@@ -1,10 +1,12 @@
 ﻿using Realtime.Data;
+using Realtime.Networks;
 
 namespace Realtime.Controllers.Handlers.Interfaces;
 
 public interface IMatchTickHandler<TMatchData, TPlayerIndex, TPlayer> 
     where TPlayer : PlayerData<TPlayerIndex>
     where TMatchData : MatchData<TPlayerIndex, TPlayer>
+    where TPlayerIndex : unmanaged, INetworkIndex
 {
     /// <summary>
     /// Called when a tick is being processed \n

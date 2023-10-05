@@ -19,9 +19,3 @@ await myClass!.DoStuff();
 await host.RunAsync();
 
 // Generate all code depending all 2 classes
-public class MyPlayerData : PlayerData<int>
-{
-}
-public class MatchData : MatchData<int, MyPlayerData>
-{
-}

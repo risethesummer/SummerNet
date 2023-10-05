@@ -1,11 +1,13 @@
 ﻿using Realtime.Controllers.Transporters.Interfaces;
 using Realtime.Data;
+using Realtime.Networks;
 
 namespace Realtime.Controllers.Handlers.Interfaces;
 
 public interface IMatchRunner<TMatchData, TPlayerIndex, TPlayer> : 
     ITransporter<TPlayerIndex, TPlayer> where TPlayer : PlayerData<TPlayerIndex>
     where TMatchData : MatchData<TPlayerIndex, TPlayer>
+    where TPlayerIndex : unmanaged, INetworkIndex
 {
     TMatchData MatchData { get; }
     void RegisterInitializeHandler(IMatchInitHandler<TMatchData, TPlayerIndex, TPlayer> handler);

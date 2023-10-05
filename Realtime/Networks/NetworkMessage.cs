@@ -1,6 +1,10 @@
-﻿namespace Realtime.Networks;
+﻿using MemoryPack;
 
-public struct NetworkMessage<TPlayerIndex, TData> where TData : INetworkPayload
+namespace Realtime.Networks;
+
+[MemoryPackable]
+public struct NetworkMessage<TPlayerIndex, TData> 
+    where TData : INetworkPayload where TPlayerIndex : unmanaged, INetworkIndex
 {
     public ushort Opcode { get; init; }
     public TData Payload { get; init; }
@@ -9,6 +13,9 @@ public struct NetworkMessage<TPlayerIndex, TData> where TData : INetworkPayload
     public MessageType MessageType { get; init; }
 }
 
+public interface INetworkIndex
+{
+}
 
 public enum MessageType
 {
@@ -17,13 +24,12 @@ public enum MessageType
 
 public interface INetworkPayload
 {
-    // ushort PayloadId { get; }
 }
 
 // Id => Length
 // Data
-public struct SentMessage<TPlayerIndex>
-{
+public struct SentMessage<TPlayerIndex> 
+{ 
     public MessageType MessageType { get; init; }
     public TPlayerIndex Target { get; init; }
     public byte[] Data { get; init; }
