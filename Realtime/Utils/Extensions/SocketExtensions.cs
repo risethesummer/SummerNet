@@ -5,7 +5,8 @@ namespace Realtime.Utils.Extensions;
 
 public static class SocketExtensions
 {
-    public static async Task FlushReceivedData(this Socket socket, ArraySegment<byte> receivedBuffer, 
+    public static async Task FlushReceivedData(this Socket socket, 
+        Memory<byte> receivedBuffer, 
         IParallelBuffer<byte> resultParallelBuffer,
         CancellationToken cancellationToken)
     {
@@ -14,7 +15,7 @@ public static class SocketExtensions
         if (dataCount > 0)
         {
             await resultParallelBuffer
-                .AddToBuffer(receivedBuffer[..dataCount], cancellationToken)
+                .AddToBuffer(receivedBuffer, cancellationToken) //Don't need to slice because we did use socket.Available
                 .ConfigureAwait(false);
         }
     }

@@ -1,13 +1,11 @@
 namespace Realtime.Utils.Buffers;
 
-public readonly struct AutoReleaseData<T> : IDisposable
+public readonly struct SemaphoreReleaser : IDisposable
 {
     private readonly SemaphoreSlim _semaphore;
-    public readonly T Data;
-    public AutoReleaseData(SemaphoreSlim semaphore, T data)
+    public SemaphoreReleaser(SemaphoreSlim semaphore)
     {
         _semaphore = semaphore;
-        Data = data;
     }
     public void Dispose()
     {

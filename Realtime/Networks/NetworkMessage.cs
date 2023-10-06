@@ -1,4 +1,7 @@
-﻿using MemoryPack;
+﻿using System.Buffers;
+using MemoryPack;
+using Realtime.Utils.Buffers;
+using Realtime.Utils.Factory;
 
 namespace Realtime.Networks;
 
@@ -28,9 +31,13 @@ public interface INetworkPayload
 
 // Id => Length
 // Data
-public struct SentMessage<TPlayerIndex> 
+public struct SentMessage<TPlayerIndex> : IDisposable
 { 
     public MessageType MessageType { get; init; }
     public TPlayerIndex Target { get; init; }
-    public byte[] Data { get; init; }
+    public AutoDisposableData<ReadOnlyMemory<byte>, UnmanagedMemoryManager<byte>> Data { get; init; }
+    public void Dispose()
+    {
+        Data.Dispose();
+    }
 }

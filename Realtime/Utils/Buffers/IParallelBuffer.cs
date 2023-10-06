@@ -6,8 +6,9 @@ namespace Realtime.Utils.Buffers;
 /// <typeparam name="TWrappedData"></typeparam>
 public interface IParallelBuffer<TWrappedData>
 {
-    ValueTask AddToBuffer(ArraySegment<TWrappedData> data, CancellationToken token);
+    void Resize(uint size);
+    ValueTask AddToBuffer(Memory<TWrappedData> data, CancellationToken token);
     ValueTask AddToBuffer(TWrappedData data, CancellationToken token);
     void Clear();
-    ValueTask<AutoReleaseData<ArraySegment<TWrappedData>>> GetBuffer(CancellationToken token);
+    ValueTask<AutoDisposableData<Memory<TWrappedData>, SemaphoreReleaser>> GetBuffer(CancellationToken token);
 }

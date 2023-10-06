@@ -1,10 +1,13 @@
+using Realtime.Utils.Factory;
+
 namespace Realtime.Utils.Buffers;
 
 public class ParallelBufferWrapper<TWrappedData> : IDisposable, IParallelBuffer<TWrappedData> 
     where TWrappedData : unmanaged
 {
-    private readonly AutoSizeBuffer<TWrappedData> _buffer = new(10000);
+    private AutoSizeBuffer<TWrappedData> _buffer;
     private readonly SemaphoreSlim _semaphoreSlim = new(0, 1);
+    private readonly UnmanagedMemoryManager<TWrappedData> _memoryManager;
     public async ValueTask AddToBuffer(TWrappedData data, CancellationToken token)
     {
         try
@@ -17,13 +20,18 @@ public class ParallelBufferWrapper<TWrappedData> : IDisposable, IParallelBuffer<
             _semaphoreSlim.Release();
         }
     }
-    
-    public async ValueTask AddToBuffer(ArraySegment<TWrappedData> data, CancellationToken token)
+
+    public void Resize(uint size)
+    {
+        _buffer.Resize(size);
+    }
+
+    public async ValueTask AddToBuffer(Memory<TWrappedData> data, CancellationToken token)
     {
         try
         {
             await _semaphoreSlim.WaitAsync(token).ConfigureAwait(false);
-            _buffer.Write(data);
+            _buffer.Write(data, data.Length);
         }
         finally
         {
@@ -36,15 +44,21 @@ public class ParallelBufferWrapper<TWrappedData> : IDisposable, IParallelBuffer<
         _buffer.Clear();
     }
 
-    public async ValueTask<AutoReleaseData<ArraySegment<TWrappedData>>> GetBuffer(CancellationToken token)
+    public async ValueTask<AutoDisposableData<Memory<TWrappedData>, SemaphoreReleaser>> GetBuffer(
+         
+        CancellationToken token)
     {
         await _semaphoreSlim.WaitAsync(token).ConfigureAwait(false);
-        return new AutoReleaseData<ArraySegment<TWrappedData>>(_semaphoreSlim, 
-            _buffer.AllocArray());
+        _memoryManager.Initialize(_buffer.DangerousBuffer);
+        var memoryBuffer = _memoryManager.Memory;
+        return new AutoDisposableData<Memory<TWrappedData>, SemaphoreReleaser>(memoryBuffer, 
+            new SemaphoreReleaser());
     }
 
     public void Dispose()
     {
         _semaphoreSlim.Dispose();
+        _buffer.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

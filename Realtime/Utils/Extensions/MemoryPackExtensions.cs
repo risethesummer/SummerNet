@@ -13,4 +13,9 @@ public static class MemoryPackExtensions
         Unsafe.WriteUnaligned(ref arrayRef, value);
         return array;
     }
+    public static void Dispose<T>(this Memory<T> enumerable) where T : IDisposable
+    {
+        foreach (var t in enumerable.Span)
+            t.Dispose();
+    }
 }

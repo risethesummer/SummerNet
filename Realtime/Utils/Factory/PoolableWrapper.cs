@@ -1,37 +1,64 @@
-using System.Buffers;
-
 namespace Realtime.Utils.Factory;
 
-public class DisposableQueue<T> : Queue<T>, IDisposable
+public class DisposableQueue<T> : Queue<T>, IPoolableObject
 {
     public void Dispose()
     {
+        Clear();
+        GC.SuppressFinalize(this);
+    }
+
+    public void Initialize()
+    {
     }
 }
 
-public sealed class DisposablePoolWrapper<T> : PoolableWrapper<T> where T : IDisposable 
+public interface IPoolableObject : IDisposable
 {
-    public DisposablePoolWrapper(IPool<PoolableWrapper<T>> pool, T wrappedValue) : base(pool, wrappedValue)
+    void Initialize();
+}
+public interface IPoolableObject<TParam> : IDisposable
+{
+    void Initialize(in TParam param);
+}
+
+public class PoolableWrapper<TParam, T> : BasePoolableWrapper<T>, IPoolableObject<TParam> where T : IPoolableObject<TParam>
+{
+    public PoolableWrapper(IPool pool, T wrappedValue) : base(pool, wrappedValue)
     {
     }
-    public override void Dispose()
+    public void Initialize(in TParam param)
     {
-        Value.Dispose();
-        base.Dispose();
+        Value.Initialize(param);
     }
 }
-public class PoolableWrapper<T> : IDisposable
+
+
+public class PoolableWrapper<T> : BasePoolableWrapper<T>, IPoolableObject where T : IPoolableObject
 {
-    private readonly IPool<PoolableWrapper<T>> _pool;
-    public T Value { get; }
-    public PoolableWrapper(IPool<PoolableWrapper<T>> pool, T wrappedValue)
+    public PoolableWrapper(IPool pool, T wrappedValue) : base(pool, wrappedValue)
+    {
+    }
+    public void Initialize()
+    {
+        Value.Initialize();
+    }
+}
+
+public class BasePoolableWrapper<T> : IDisposable where T : IDisposable
+{
+    private readonly IPool _pool;
+    protected T Value;
+    public BasePoolableWrapper(IPool pool, T wrappedValue)
     {
         _pool = pool;
         Value = wrappedValue;
     }
-    public static implicit operator T(PoolableWrapper<T> entry) => entry.Value;
-    public virtual void Dispose()
+    public ref T AsValue() => ref Value;
+    public void Dispose()
     {
+        Value.Dispose();
         _pool.Dispose(this);
+        GC.SuppressFinalize(this);
     }
 }

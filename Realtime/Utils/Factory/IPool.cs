@@ -1,6 +1,6 @@
 namespace Realtime.Utils.Factory;
 
-public interface IPool<T> : IFactory<T>
+public interface IPool
 {
-    void Dispose(T obj);
+    void Dispose(in object obj);
 }
