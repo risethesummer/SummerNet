@@ -22,12 +22,13 @@ public class TcpSocketTransporter<TPlayerIndex, TPlayer> : ITransporter<TPlayerI
     private readonly IParallelBuffer<byte> _receivedParallelBufferWrapper;
     private readonly IParallelBuffer<SentMessage<TPlayerIndex>> _sentParallelBufferWrapper;
     private readonly Dictionary<TPlayerIndex, Socket> _sockets = new();
+    private readonly List<TPlayerIndex> _indexToPlayerIndex = new();
     private readonly IPlayerAuthenticator<TPlayerIndex, TPlayer> _authenticator;
     private readonly IFactory<uint, PoolableWrapper<uint, AutoSizeBuffer<byte>>> _bufferPool;
     private readonly IFactory<PoolableWrapper<DisposableQueue<Task>>> _taskPool;
 
-    private readonly IFactory<DangerousBuffer<byte>,
-        PoolableWrapper<DangerousBuffer<byte>, UnmanagedMemoryManager<byte>>> _memoryManagerPool;
+    private readonly IFactory<BufferPointer<byte>,
+        PoolableWrapper<BufferPointer<byte>, UnmanagedMemoryManager<byte>>> _memoryManagerPool;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public NetworkMessage<TPlayerIndex, T>? ExtractMessage<T>(byte[] data, in int length) where T : INetworkPayload
@@ -69,6 +70,7 @@ public class TcpSocketTransporter<TPlayerIndex, TPlayer> : ITransporter<TPlayerI
     private void AddPlayer(TPlayerIndex playerIndex, Socket socket)
     {
         _sockets.Add(playerIndex, socket);
+        _indexToPlayerIndex.Add(playerIndex);
     }
 
     public async ValueTask InitMatchPlayersAsync(CancellationToken initMatchToken)
@@ -95,15 +97,15 @@ public class TcpSocketTransporter<TPlayerIndex, TPlayer> : ITransporter<TPlayerI
     public ValueTask SendMessage<T>(in NetworkMessage<TPlayerIndex, T> msg,
         CancellationToken cancellationToken) where T : unmanaged, INetworkPayload
     {
-        if (!_sockets.ContainsKey(msg.Target))
+        if (!_sockets.ContainsKey(msg.AssociatedClient))
             return ValueTask.CompletedTask;
-        var data = _messageEncoder.EncodeNonAlloc(msg);
+        var data = _messageEncoder.EncodeNonAlloc(msg.Opcode, msg.Payload);
         if (msg.MessageType != MessageType.Broadcast)
-            return new ValueTask(SentMessageToTarget(msg.Target, data, cancellationToken));
-        return new ValueTask(Broadcast(data, cancellationToken));
+            return SentMessageToTarget(msg.AssociatedClient, data, cancellationToken);
+        return Broadcast(data, cancellationToken);
     }
 
-    private async Task SentMessageToTarget(TPlayerIndex target, AutoDisposableData<ReadOnlyMemory<byte>,
+    private async ValueTask SentMessageToTarget(TPlayerIndex target, AutoDisposableData<ReadOnlyMemory<byte>,
         UnmanagedMemoryManager<byte>> msg, CancellationToken token)
     {
         using (msg)
@@ -114,13 +116,13 @@ public class TcpSocketTransporter<TPlayerIndex, TPlayer> : ITransporter<TPlayerI
         }
     }
 
-    private async Task Broadcast(AutoDisposableData<ReadOnlyMemory<byte>, UnmanagedMemoryManager<byte>> msg,
+    private async ValueTask Broadcast(AutoDisposableData<ReadOnlyMemory<byte>, UnmanagedMemoryManager<byte>> msg,
         CancellationToken token)
     {
         using (msg)
         {
             using var queueWrapper = _taskPool.Create();
-            var queue = queueWrapper.AsValue();
+            var queue = queueWrapper.WrappedValue;
             foreach (var socket in _sockets.Values)
                 queue.Enqueue(socket.SendAsync(msg.Data, token).AsTask());
             await Task.WhenAll(queue).ConfigureAwait(false);
@@ -130,15 +132,15 @@ public class TcpSocketTransporter<TPlayerIndex, TPlayer> : ITransporter<TPlayerI
     public ValueTask SendMessageInline<T>(in NetworkMessage<TPlayerIndex, T> msg,
         CancellationToken cancellationToken) where T : unmanaged, INetworkPayload
     {
-        if (!_sockets.ContainsKey(msg.Target))
+        if (!_sockets.ContainsKey(msg.AssociatedClient))
             return ValueTask.CompletedTask;
-        var data = _messageEncoder.EncodeNonAlloc(msg);
+        var data = _messageEncoder.EncodeNonAlloc(msg.Opcode, msg.Payload);
         // We're not disposing the message here but when flushing to send them in tick
         return _sentParallelBufferWrapper.AddToBuffer(new SentMessage<TPlayerIndex>
         {
-            Data = data,
+            DisposableDataWrapper = data,
             MessageType = msg.MessageType,
-            Target = msg.Target
+            Target = msg.AssociatedClient
         }, cancellationToken);
     }
 
@@ -146,9 +148,8 @@ public class TcpSocketTransporter<TPlayerIndex, TPlayer> : ITransporter<TPlayerI
     {
         using var queueTask = _taskPool.Create();
         using var messagesBuffer = await _sentParallelBufferWrapper.GetBuffer(cancellationToken);
-        var messages = messagesBuffer.Data;
-        var queue = queueTask.AsValue();
-        SendMessagesToQueue(messages, queue, cancellationToken);
+        var queue = queueTask.WrappedValue;
+        SendMessagesToQueue(messagesBuffer.Data, queue, cancellationToken);
         await Task.WhenAll(queue).ConfigureAwait(false);
     }
 
@@ -176,9 +177,9 @@ public class TcpSocketTransporter<TPlayerIndex, TPlayer> : ITransporter<TPlayerI
         in Queue<Task> queueTask, CancellationToken cancellationToken)
     {
         if (message.MessageType == MessageType.Broadcast)
-            Broadcast(message.Data.Data, queueTask, cancellationToken);
+            Broadcast(message.DisposableDataWrapper.Data, queueTask, cancellationToken);
         else
-            SentMessageToTarget(message.Target, message.Data.Data, queueTask, cancellationToken);
+            SentMessageToTarget(message.Target, message.DisposableDataWrapper.Data, queueTask, cancellationToken);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -204,51 +205,87 @@ public class TcpSocketTransporter<TPlayerIndex, TPlayer> : ITransporter<TPlayerI
         _sentParallelBufferWrapper.Clear();
     }
 
-    public async IAsyncEnumerable<NetworkMessage<TPlayerIndex, INetworkPayload>> FlushReceivedMessagesAsync(
+    public async IAsyncEnumerable<RawNetworkMessage<TPlayerIndex>> FlushReceivedMessagesAsync(
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         using var messagesBuffer = await
             _receivedParallelBufferWrapper.GetBuffer(cancellationToken);
-        var messages = messagesBuffer.Data;
-        var length = messages.Length;
-        var newIndex = 0;
-        while (newIndex < length)
+        ReadOnlyMemory<byte> messages = messagesBuffer.Data;
+        while (messages.Length > 0 && !cancellationToken.IsCancellationRequested) 
         {
-            if (cancellationToken.IsCancellationRequested)
+            var decode = _messageDecoder.Decode(messages);
+            if (!decode.HasValue)
                 break;
-            var converted =
-                _messageDecoder.Decode(messages[newIndex..], out newIndex);
-            if (converted.HasValue)
-                yield return converted.Value;
+            var decodeVal = decode.Value;
+            yield return new RawNetworkMessage<TPlayerIndex>
+            {
+                MessageId = decodeVal.MessageId,
+                Opcode = decodeVal.Opcode,
+                Owner = _indexToPlayerIndex[decodeVal.OwnerIndex],
+                Payload = messages[..decodeVal.EndIndex]
+            };
+            messages = messages[decodeVal.EndIndex..]; //Continue with the remaining part
         }
     }
 
-    public async ValueTask StartFlushingReceivedMessagesAsync(CancellationToken cancellationToken)
+    //Try to calculate medium message size
+    private uint _mediumReceivedBytes;
+    public async ValueTask StartReceivingMessagesAsync(CancellationToken cancellationToken)
     {
+        // Dispose graph: queueTasks->queue
         using var queueTasks = _taskPool.Create();
-        var queue = queueTasks.AsValue();
-        uint countBytes = 0;
+        var queue = queueTasks.WrappedValue;
+        _receivedParallelBufferWrapper.Resize(_mediumReceivedBytes); //Resize to avoid reallocation 
+        ushort ownerIndex = 0;
         foreach (var socket in _sockets.Values)
-            countBytes += (uint)socket.Available;
-        if (countBytes <= 0)
-            return;
-        _receivedParallelBufferWrapper.Resize(countBytes); //Resize to avoid reallocation 
-        foreach (var socket in _sockets.Values)
-            if (socket.Available > 0)
-                queue.Enqueue(FlushTaskRunner(socket, cancellationToken));
+            queue.Enqueue(ReceivingMessagesRunner(ownerIndex++, socket, cancellationToken));
         await Task.WhenAll(queue);
     }
-
-    private async Task FlushTaskRunner(Socket socket, CancellationToken cancellationToken)
+    
+    private async Task ReceivingMessagesRunner(ushort ownerIndex, Socket socket, CancellationToken cancellationToken)
     {
-        var available = socket.Available;
-        if (available == 0)
-            return;
-        using var buffer = new AutoSizeBuffer<byte>((uint)available);
-        using var memoryManagerWrapper = _memoryManagerPool.Create(buffer.DangerousBuffer);
-        var memoryManager = memoryManagerWrapper.AsValue();
-        await socket.FlushReceivedData(memoryManager.Memory,
-                _receivedParallelBufferWrapper, cancellationToken)
-            .ConfigureAwait(false);
+        // Dispose graph: memoryManagerWrapper->memoryManager->buffer
+        var buffer = new AutoSizeBuffer<byte>(1024); // Memory manager will free the pointer, so we don't need using keyword
+        buffer.Write(ownerIndex, NetworkMessageCommonInfo.HeaderArgumentSize); // Make room for message owner
+        using var memoryManagerWrapper = _memoryManagerPool.Create(buffer.BufferPointer);
+        var memoryManager = memoryManagerWrapper.WrappedValue;
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            await socket.FlushReceivedData(
+                    memoryManager.Memory, 
+                    NetworkMessageCommonInfo.HeaderArgumentSize, //Ignore the segment of owner index
+                    _receivedParallelBufferWrapper, 
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
     }
+    
+    // public async ValueTask StartReceivingMessagesAsync(CancellationToken cancellationToken)
+    // {
+    //     using var queueTasks = _taskPool.Create();
+    //     var queue = queueTasks.WrappedValue;
+    //     uint countBytes = 0;
+    //     foreach (var socket in _sockets.Values)
+    //         countBytes += (uint)socket.Available;
+    //     if (countBytes <= 0)
+    //         return;
+    //     _receivedParallelBufferWrapper.Resize(countBytes); //Resize to avoid reallocation 
+    //     foreach (var socket in _sockets.Values)
+    //         if (socket.Available > 0)
+    //             queue.Enqueue(FlushTaskRunner(socket, cancellationToken));
+    //     await Task.WhenAll(queue);
+    // }
+    //
+    // private async Task FlushTaskRunner(Socket socket, CancellationToken cancellationToken)
+    // {
+    //     var available = socket.Available;
+    //     if (available == 0)
+    //         return;
+    //     using var buffer = new AutoSizeBuffer<byte>((uint)available);
+    //     using var memoryManagerWrapper = _memoryManagerPool.Create(buffer.DangerousBuffer);
+    //     var memoryManager = memoryManagerWrapper.WrappedValue;
+    //     await socket.FlushReceivedData(memoryManager.Memory,
+    //             _receivedParallelBufferWrapper, cancellationToken)
+    //         .ConfigureAwait(false);
+    // }
 }

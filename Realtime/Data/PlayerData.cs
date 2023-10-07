@@ -1,8 +1,9 @@
 ﻿using System.Net;
+using Realtime.Networks;
 
 namespace Realtime.Data;
 
-public class PlayerData<TId>
+public class PlayerData<TId> where TId : unmanaged, INetworkIndex
 {
     public TId PlayerId { get; init; }
     public string Name { get; init; }

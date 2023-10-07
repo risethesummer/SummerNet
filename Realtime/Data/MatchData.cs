@@ -1,6 +1,10 @@
-﻿namespace Realtime.Data;
+﻿using Realtime.Networks;
 
-public class MatchData<TPlayerIndex, TPlayer> where TPlayer : PlayerData<TPlayerIndex>
+namespace Realtime.Data;
+
+public class MatchData<TPlayerIndex, TPlayer> 
+    where TPlayer : PlayerData<TPlayerIndex> 
+    where TPlayerIndex : unmanaged, INetworkIndex
 {
     public string Id { get; init; } = Guid.NewGuid().ToString();
     public DateTime CreatedTime { get; init; } = DateTime.Now;

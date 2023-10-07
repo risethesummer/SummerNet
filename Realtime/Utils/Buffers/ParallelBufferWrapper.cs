@@ -45,14 +45,13 @@ public class ParallelBufferWrapper<TWrappedData> : IDisposable, IParallelBuffer<
     }
 
     public async ValueTask<AutoDisposableData<Memory<TWrappedData>, SemaphoreReleaser>> GetBuffer(
-         
         CancellationToken token)
     {
         await _semaphoreSlim.WaitAsync(token).ConfigureAwait(false);
-        _memoryManager.Initialize(_buffer.DangerousBuffer);
+        _memoryManager.Initialize(_buffer.BufferPointer);
         var memoryBuffer = _memoryManager.Memory;
         return new AutoDisposableData<Memory<TWrappedData>, SemaphoreReleaser>(memoryBuffer, 
-            new SemaphoreReleaser());
+            new SemaphoreReleaser(_semaphoreSlim));
     }
 
     public void Dispose()

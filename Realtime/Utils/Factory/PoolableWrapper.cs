@@ -54,7 +54,7 @@ public class BasePoolableWrapper<T> : IDisposable where T : IDisposable
         _pool = pool;
         Value = wrappedValue;
     }
-    public ref T AsValue() => ref Value;
+    public ref readonly T WrappedValue => ref Value;
     public void Dispose()
     {
         Value.Dispose();

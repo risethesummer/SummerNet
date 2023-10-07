@@ -37,12 +37,13 @@ public unsafe struct EncodeBufferWriter : IBufferWriter<byte>, IDisposable
         CheckSize(sizeHint);
         return new Span<byte>(_buffer, sizeHint)[_prepend..];
     }
-    public DangerousBuffer<byte> PrependAndGet(in ReadOnlySpan<byte> prepend)
+    public BufferPointer<byte> PrependAndGet(in Span<byte> prepend)
     {
         var result = new Span<byte>(_buffer, _size);
         for (var i = 0; i < _prepend; i++)
             result[i] = prepend[i];
-        var res = new DangerousBuffer<byte>((byte*)_buffer, _size);
+        
+        var res = new BufferPointer<byte>((byte*)_buffer, _size);
         // Need to return for another usage, so not try to free the memory
         _buffer = null;
         Dispose();

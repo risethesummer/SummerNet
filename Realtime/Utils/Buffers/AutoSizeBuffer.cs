@@ -55,7 +55,7 @@ public unsafe struct AutoSizeBuffer<T> : IPoolableObject<uint> where T : unmanag
         _endIndex += length;
     }
 
-    public DangerousBuffer<T> DangerousBuffer => new((T*)_buffer, Length);
+    public BufferPointer<T> BufferPointer => new((T*)_buffer, Length);
     
     public void Initialize(in uint param)
     {

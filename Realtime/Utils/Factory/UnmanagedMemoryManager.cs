@@ -9,7 +9,7 @@ namespace Realtime.Utils.Factory;
 /// A MemoryManager over a raw pointer
 /// </summary>
 /// <remarks>The pointer is assumed to be fully unmanaged, or externally pinned - no attempt will be made to pin this data</remarks>
-public sealed unsafe class UnmanagedMemoryManager<T> : MemoryManager<T>, IPoolableObject<DangerousBuffer<T>> where T : unmanaged
+public sealed unsafe class UnmanagedMemoryManager<T> : MemoryManager<T>, IPoolableObject<BufferPointer<T>> where T : unmanaged
 {
     private T* _pointer;
     private int _length;
@@ -68,7 +68,7 @@ public sealed unsafe class UnmanagedMemoryManager<T> : MemoryManager<T>, IPoolab
         _length = 0;
     }
 
-    public void Initialize(in DangerousBuffer<T> param)
+    public void Initialize(in BufferPointer<T> param)
     {
         var length = param.Length;
         if (length < 0) 

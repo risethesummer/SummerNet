@@ -1,20 +1,47 @@
 ﻿using System.Buffers;
 using MemoryPack;
-using Realtime.Utils.Buffers;
-using Realtime.Utils.Factory;
 
 namespace Realtime.Networks;
 
 [MemoryPackable]
-public struct NetworkMessage<TPlayerIndex, TData> 
+public readonly struct NetworkMessage<TPlayerIndex, TData> 
     where TData : INetworkPayload where TPlayerIndex : unmanaged, INetworkIndex
 {
     public ushort Opcode { get; init; }
     public TData Payload { get; init; }
-    public TPlayerIndex Owner { get; init; }
-    public TPlayerIndex Target { get; init; }
+    public TPlayerIndex AssociatedClient { get; init; }
     public MessageType MessageType { get; init; }
 }
+
+public readonly struct RawNetworkMessage<TPlayerIndex> where TPlayerIndex : unmanaged, INetworkIndex
+{
+    public ushort MessageId { get; init; }
+    public ushort Opcode { get; init; }
+    public TPlayerIndex Owner { get; init; }
+    public ReadOnlyMemory<byte> Payload { get; init; }
+}
+
+public static class NetworkMessageCommonInfo
+{
+    public const int HeaderArgumentSize = sizeof(ushort);
+    public static class ServerMsgArgumentPosition
+    {
+        public const int HeaderValuesCount = 2;
+        public const int HeaderSize = HeaderValuesCount * HeaderArgumentSize;
+        public static readonly Range Message = Range.EndAt(HeaderArgumentSize); 
+        public static readonly Range Opcode = new(HeaderArgumentSize, HeaderArgumentSize * 2);
+    }
+    
+    public static class ClientMsgArgumentPosition
+    {
+        public const int HeaderValuesCount = 3;
+        public const int HeaderSize = HeaderValuesCount * HeaderArgumentSize;
+        public static readonly Range OwnerIdx = Range.EndAt(HeaderArgumentSize);
+        public static readonly Range Message = new(HeaderArgumentSize, HeaderArgumentSize * 2); 
+        public static readonly Range Opcode = new(HeaderArgumentSize * 2, HeaderArgumentSize * 3);
+    }
+}
+
 
 public interface INetworkIndex
 {
@@ -31,13 +58,3 @@ public interface INetworkPayload
 
 // Id => Length
 // Data
-public struct SentMessage<TPlayerIndex> : IDisposable
-{ 
-    public MessageType MessageType { get; init; }
-    public TPlayerIndex Target { get; init; }
-    public AutoDisposableData<ReadOnlyMemory<byte>, UnmanagedMemoryManager<byte>> Data { get; init; }
-    public void Dispose()
-    {
-        Data.Dispose();
-    }
-}

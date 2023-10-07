@@ -1,4 +1,5 @@
-﻿using Realtime.Controllers.Handlers.Interfaces;
+﻿using MemoryPack;
+using Realtime.Controllers.Handlers.Interfaces;
 using Realtime.Data;
 using Realtime.Networks;
 
@@ -43,10 +44,9 @@ internal partial class MatchTickManager<TMatchData, TPlayerIndex, TPlayer>
                     var msg = new NetworkMessage<TPlayerIndex, MyMessage>
                     {
                         Opcode = message.Opcode,
-                        Payload = (MyMessage)message.Payload,
-                        Owner = message.Owner,
-                        Target = message.Target,
-                        MessageType = message.MessageType
+                        AssociatedClient = message.Owner,
+                        Payload = MemoryPackSerializer.Deserialize<MyMessage>(message.Payload.Span),
+                        MessageType = MessageType.ClientToSever
                     };
                     foreach (var handler in _myMessageHandlers)
                         handler.OnMessage(_matchRunner, tick, order, msg);
@@ -64,11 +64,21 @@ internal partial class MatchTickManager<TMatchData, TPlayerIndex, TPlayer>
     {
         return _matchRunner.FlushSentMessage(cancellationToken);
     }
+
+    // Reset StartReceivingMessagesForNewTick
+    // Call StartReceivingMessagesForNewTick
+    // Wait for new tick
+    // Cancel StartReceivingMessagesForNewTick
+    // Tick
+    private ValueTask StartReceivingMessagesForNewTick(CancellationToken token)
+    {
+        return _matchRunner.StartReceivingMessagesAsync(token);
+    }
+    
     public async ValueTask Tick(IMatchRunner<TMatchData, TPlayerIndex, TPlayer> matchRunner, 
         CancellationToken token)
     {
         var tick = _matchTickCounter.Tick;
-        await _matchRunner.StartFlushingReceivedMessagesAsync(token).ConfigureAwait(false);
         foreach (var handler in _tickHandlers)
             handler.OnStartTick(matchRunner, tick);
         await ReceiveMessages(token);
