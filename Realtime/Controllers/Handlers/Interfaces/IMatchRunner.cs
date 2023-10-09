@@ -4,17 +4,17 @@ using Realtime.Networks;
 
 namespace Realtime.Controllers.Handlers.Interfaces;
 
-public interface IMatchRunner<TMatchData, TPlayerIndex, TPlayer> : 
-    ITransporter<TPlayerIndex, TPlayer> where TPlayer : PlayerData<TPlayerIndex>
-    where TMatchData : MatchData<TPlayerIndex, TPlayer>
+public interface IMatchRunner<TMatchData, TPlayerIndex, TAuthData, TPlayer> : 
+    ITransporter<TPlayerIndex, TAuthData, TPlayer> where TPlayer : PlayerData<TPlayerIndex, TAuthData>
+    where TMatchData : MatchData<TPlayerIndex, TAuthData, TPlayer>
     where TPlayerIndex : unmanaged, INetworkIndex
 {
     TMatchData MatchData { get; }
-    void RegisterInitializeHandler(IMatchInitHandler<TMatchData, TPlayerIndex, TPlayer> handler);
-    void RegisterMatchJoinHandler(IMatchJoinHandler<TMatchData, TPlayerIndex, TPlayer> handler);
-    void RegisterMatchLeaveHandler(IMatchLeaveHandler<TMatchData, TPlayerIndex, TPlayer> handler);
-    void RegisterMatchTickHandler(IMatchTickHandler<TMatchData, TPlayerIndex, TPlayer> handler);
-    void RegisterMatchShutdownHandler(IMatchShutdownHandler<TMatchData, TPlayerIndex, TPlayer> handler);
+    void RegisterInitializeHandler(IMatchInitHandler<TMatchData, TPlayerIndex, TAuthData, TPlayer> handler);
+    void RegisterMatchJoinHandler(IMatchJoinHandler<TMatchData, TPlayerIndex, TAuthData, TPlayer> handler);
+    void RegisterMatchLeaveHandler(IMatchLeaveHandler<TMatchData, TPlayerIndex, TAuthData, TPlayer> handler);
+    void RegisterMatchTickHandler(IMatchTickHandler<TMatchData, TPlayerIndex, TAuthData, TPlayer> handler);
+    void RegisterMatchShutdownHandler(IMatchShutdownHandler<TMatchData, TPlayerIndex, TAuthData, TPlayer> handler);
     ValueTask<TMatchData> StartMatch();
     ValueTask<TMatchData> Shutdown();
 }

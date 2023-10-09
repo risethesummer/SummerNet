@@ -2,6 +2,6 @@
 
 public enum PlayerStatus
 {
-    Normal, Disconnected
+    Setup, Normal, Disconnected
 }
 

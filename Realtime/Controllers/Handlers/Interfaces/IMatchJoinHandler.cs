@@ -3,9 +3,9 @@ using Realtime.Networks;
 
 namespace Realtime.Controllers.Handlers.Interfaces;
 
-public interface IMatchJoinHandler<TMatchData, TPlayerIndex, TPlayer> 
-    where TPlayer : PlayerData<TPlayerIndex>
-    where TMatchData : MatchData<TPlayerIndex, TPlayer>
+public interface IMatchJoinHandler<TMatchData, TPlayerIndex, TAuthData, TPlayer> 
+    where TPlayer : PlayerData<TPlayerIndex, TAuthData>
+    where TMatchData : MatchData<TPlayerIndex, TAuthData, TPlayer>
     where TPlayerIndex : unmanaged, INetworkIndex
 {
     /// <summary>
@@ -14,5 +14,5 @@ public interface IMatchJoinHandler<TMatchData, TPlayerIndex, TPlayer>
     /// <param name="playerData"></param>
     /// <param name="tick"></param>
     /// <returns>The player data to be added (null to refuse player)</returns>
-    ValueTask<TPlayer> OnJoin(IMatchRunner<TMatchData, TPlayerIndex, TPlayer> matchRunner, TPlayer playerData, int tick);
+    ValueTask<TPlayer> OnJoin(IMatchRunner<TMatchData, TPlayerIndex, TAuthData, TPlayer> matchRunner, TPlayer playerData, int tick);
 }

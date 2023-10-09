@@ -3,11 +3,13 @@ using Realtime.Networks;
 
 namespace Realtime.Data;
 
-public class PlayerData<TId> where TId : unmanaged, INetworkIndex
+public class PlayerData<TId, TAuthData> 
+    where TId : unmanaged, INetworkIndex 
 {
-    public TId PlayerId { get; init; }
-    public string Name { get; init; }
-    public DateTime JoinedTime { get; init; }
-    public IPAddress Address { get; init; }
-    public PlayerStatus Status { get; set; }
+    public TId PlayerId { get; set; }
+    public string Name { get; set; }
+    public TAuthData AuthData { get; init; }
+    public required DateTime JoinedTime { get; init; }
+    public required IPAddress Address { get; init; }
+    public required PlayerStatus Status { get; set; }
 }

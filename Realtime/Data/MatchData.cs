@@ -2,8 +2,8 @@
 
 namespace Realtime.Data;
 
-public class MatchData<TPlayerIndex, TPlayer> 
-    where TPlayer : PlayerData<TPlayerIndex> 
+public class MatchData<TPlayerIndex, TAuthData, TPlayer> 
+    where TPlayer : PlayerData<TPlayerIndex, TAuthData> 
     where TPlayerIndex : unmanaged, INetworkIndex
 {
     public string Id { get; init; } = Guid.NewGuid().ToString();

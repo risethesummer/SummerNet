@@ -3,8 +3,8 @@ using Realtime.Networks;
 
 namespace Realtime.Controllers.Filters.Interfaces;
 
-public interface IPlayerAuthenticator<TPlayerIndex, TPlayerData> 
-    where TPlayerData : PlayerData<TPlayerIndex> where TPlayerIndex : unmanaged, INetworkIndex
+public interface IPlayerAuthenticator<TPlayerIndex, TAuthData, TPlayer> 
+    where TPlayer : PlayerData<TPlayerIndex, TAuthData> where TPlayerIndex : unmanaged, INetworkIndex
 {
-    ValueTask<TPlayerData> Authenticate(TPlayerData data);
+    ValueTask<TPlayer> Authenticate(TPlayer data);
 }

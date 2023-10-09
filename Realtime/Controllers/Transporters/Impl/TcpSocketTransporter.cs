@@ -1,4 +1,5 @@
-﻿using System.Net.Sockets;
+﻿using System.Net;
+using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using MemoryPack;
 using Realtime.Controllers.Filters.Interfaces;
@@ -13,9 +14,9 @@ namespace Realtime.Controllers.Transporters.Impl;
 
 // Decode into segment
 
-public class TcpSocketTransporter<TPlayerIndex, TPlayer> : ITransporter<TPlayerIndex, TPlayer>
+public class TcpSocketTransporter<TPlayerIndex, TAuthData, TPlayer> : ITransporter<TPlayerIndex, TAuthData, TPlayer>
     where TPlayerIndex : unmanaged, INetworkIndex
-    where TPlayer : PlayerData<TPlayerIndex>, INetworkPayload
+    where TPlayer : PlayerData<TPlayerIndex, TAuthData>, INetworkPayload, new()
 {
     private readonly MessageDecoder<TPlayerIndex> _messageDecoder;
     private readonly MessageEncoder _messageEncoder;
@@ -23,7 +24,7 @@ public class TcpSocketTransporter<TPlayerIndex, TPlayer> : ITransporter<TPlayerI
     private readonly IParallelBuffer<SentMessage<TPlayerIndex>> _sentParallelBufferWrapper;
     private readonly Dictionary<TPlayerIndex, Socket> _sockets = new();
     private readonly List<TPlayerIndex> _indexToPlayerIndex = new();
-    private readonly IPlayerAuthenticator<TPlayerIndex, TPlayer> _authenticator;
+    private readonly IPlayerAuthenticator<TPlayerIndex, TAuthData, TPlayer> _authenticator;
     private readonly IFactory<uint, PoolableWrapper<uint, AutoSizeBuffer<byte>>> _bufferPool;
     private readonly IFactory<PoolableWrapper<DisposableQueue<Task>>> _taskPool;
 
@@ -38,22 +39,7 @@ public class TcpSocketTransporter<TPlayerIndex, TPlayer> : ITransporter<TPlayerI
         return deserializedData;
     }
 
-    public async ValueTask<NetworkMessage<TPlayerIndex, T>?> GetMessageAsync<T>(Socket socket, uint opcode,
-        CancellationToken cancellationToken = default) where T : INetworkPayload
-    {
-        while (!cancellationToken.IsCancellationRequested)
-        {
-            using var buffer = _bufferPool.Create();
-            var dataCount = await socket.ReceiveAsync(buffer.Value, cancellationToken).ConfigureAwait(false);
-            if (cancellationToken.IsCancellationRequested)
-                return null;
-            var data = ExtractMessage<T>(buffer.Value, dataCount);
-            if (data.HasValue && data.Value.Opcode == opcode)
-                return data;
-        }
 
-        return null;
-    }
 
     public async ValueTask RemovePlayerAsync(TPlayerIndex target)
     {
@@ -79,19 +65,46 @@ public class TcpSocketTransporter<TPlayerIndex, TPlayer> : ITransporter<TPlayerI
             AddressFamily.InterNetwork,
             SocketType.Stream,
             ProtocolType.Tcp);
+        using var queueTask =  _taskPool.Create();
+        var queue = queueTask.WrappedValue;
         while (!initMatchToken.IsCancellationRequested)
         {
             var accept = await listener.AcceptAsync(initMatchToken).ConfigureAwait(false);
-            var player = await HandShake(accept);
-            if (player is not null)
-                AddPlayer(player.PlayerId, accept);
+            queue.Enqueue(HandShake(accept, initMatchToken));
         }
+        await Task.WhenAll(queue);
     }
 
-    private async ValueTask<TPlayer?> HandShake(Socket socket)
+    private async Task<T?> GetRawMessageAsync<T>(Socket socket, CancellationToken cancellationToken) 
     {
-        var data = await GetMessageAsync<TPlayer>(socket, 0);
-        return data.HasValue ? await _authenticator.Authenticate(data.Value.Payload) : null;
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            var buffer = new AutoSizeBuffer<byte>(1024); 
+            // Memory manager will free the pointer, so we don't need using keyword
+            using var memoryManagerWrapper = _memoryManagerPool.Create(buffer.BufferPointer);
+            var memory = memoryManagerWrapper.WrappedValue.Memory;
+            var handshakeData = await socket.ReceiveAsync(memory, cancellationToken);
+            var data = MemoryPackSerializer.Deserialize<T>(memory[..handshakeData].Span);
+            return data;
+        }
+        return default;
+    }
+
+    private async Task HandShake(Socket socket, CancellationToken cancellationToken)
+    {
+        var data = await GetRawMessageAsync<TAuthData>(socket, cancellationToken);
+        if (data is not null && socket.RemoteEndPoint is IPEndPoint remoteIpEndPoint)
+        {
+            var playerData = new TPlayer
+            {
+                Address = remoteIpEndPoint.Address,
+                JoinedTime = DateTime.Now,
+                Status = PlayerStatus.Setup,
+                AuthData = data
+            };
+            playerData = await _authenticator.Authenticate(playerData);
+            AddPlayer(playerData.PlayerId, socket);
+        }
     }
 
     public ValueTask SendMessage<T>(in NetworkMessage<TPlayerIndex, T> msg,

@@ -3,10 +3,10 @@ using Realtime.Networks;
 
 namespace Realtime.Controllers.Handlers.Interfaces;
 
-public interface IMatchShutdownHandler<TMatchData, TPlayerIndex, TPlayer> 
-    where TPlayer : PlayerData<TPlayerIndex>
-    where TMatchData : MatchData<TPlayerIndex, TPlayer>
+public interface IMatchShutdownHandler<TMatchData, TPlayerIndex, TAuthData, TPlayer> 
+    where TPlayer : PlayerData<TPlayerIndex, TAuthData>
+    where TMatchData : MatchData<TPlayerIndex, TAuthData, TPlayer>
     where TPlayerIndex : unmanaged, INetworkIndex
 {
-    Task OnShutdown(IMatchRunner<TMatchData, TPlayerIndex, TPlayer> matchRunner, int tick);
+    Task OnShutdown(IMatchRunner<TMatchData, TPlayerIndex, TAuthData, TPlayer> matchRunner, int tick);
 }

@@ -5,13 +5,13 @@ using Realtime.Networks;
 
 namespace Realtime.Controllers.Handlers.Impl;
 
-internal partial class MatchTickManager<TMatchData, TPlayerIndex, TPlayer> 
-    where TPlayer : PlayerData<TPlayerIndex>
-    where TMatchData : MatchData<TPlayerIndex, TPlayer>
+internal partial class MatchTickManager<TMatchData, TPlayerIndex, TAuthData, TPlayer> 
+    where TPlayer : PlayerData<TPlayerIndex, TAuthData>
+    where TMatchData : MatchData<TPlayerIndex, TAuthData, TPlayer>
     where TPlayerIndex : unmanaged, INetworkIndex
 {
-    private readonly IEnumerable<IMatchTickHandler<TMatchData, TPlayerIndex, TPlayer>> _tickHandlers;
-    private readonly IMatchRunner<TMatchData, TPlayerIndex, TPlayer> _matchRunner;
+    private readonly IEnumerable<IMatchTickHandler<TMatchData, TPlayerIndex, TAuthData, TPlayer>> _tickHandlers;
+    private readonly IMatchRunner<TMatchData, TPlayerIndex, TAuthData, TPlayer> _matchRunner;
     private readonly MatchTickCounter _matchTickCounter;
 
     // Generate code to call _msgReceiver.Flush() => Flush()
@@ -25,9 +25,9 @@ internal partial class MatchTickManager<TMatchData, TPlayerIndex, TPlayer>
         
     }
     // Generated
-    private readonly IEnumerable<IMatchMessageHandler<MyMessage, TMatchData, TPlayerIndex, TPlayer>>
+    private readonly IEnumerable<IMatchMessageHandler<MyMessage, TMatchData, TPlayerIndex, TAuthData, TPlayer>>
         _myMessageHandlers;    
-    private readonly IEnumerable<IMatchMessageAsyncHandler<MyMessage, TMatchData, TPlayerIndex, TPlayer>>
+    private readonly IEnumerable<IMatchMessageAsyncHandler<MyMessage, TMatchData, TPlayerIndex, TAuthData, TPlayer>>
         _myMessageAsyncHandlers;
     private async ValueTask ReceiveMessages(CancellationToken cancellationToken)
     {
@@ -75,7 +75,7 @@ internal partial class MatchTickManager<TMatchData, TPlayerIndex, TPlayer>
         return _matchRunner.StartReceivingMessagesAsync(token);
     }
     
-    public async ValueTask Tick(IMatchRunner<TMatchData, TPlayerIndex, TPlayer> matchRunner, 
+    public async ValueTask Tick(IMatchRunner<TMatchData, TPlayerIndex, TAuthData, TPlayer> matchRunner, 
         CancellationToken token)
     {
         var tick = _matchTickCounter.Tick;
