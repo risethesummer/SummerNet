@@ -17,12 +17,14 @@ public static class RoslynExtensions
         return false;
     }
     
-    public static INamedTypeSymbol? GetClassOrStructInheritInherit(this GeneratorSyntaxContext context, string interfaceName)
+    public static INamedTypeSymbol? GetClassOrStructInheritInherit(this GeneratorSyntaxContext context, string interfaceName, bool goDeep)
     {
         var classDeclarationSyntax = (ClassDeclarationSyntax)context.Node;
         var symbol = context.SemanticModel.GetSymbolInfo(classDeclarationSyntax).Symbol;
-        if (symbol is not INamedTypeSymbol namedTypeSymbol || !namedTypeSymbol.InheritInterface(interfaceName, true))
+        if (symbol is not INamedTypeSymbol namedTypeSymbol || !namedTypeSymbol.InheritInterface(interfaceName, goDeep))
+        {
             return null;
+        }
         return namedTypeSymbol;
     }
 

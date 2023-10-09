@@ -4,18 +4,19 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Realtime.Data;
 
-using IHost host = Host.CreateDefaultBuilder(args)
-    .ConfigureServices(services =>
-    {
-        services.Add(ServiceDescriptor.Singleton<>());
-        services.AddSingleton<MyClass2>();        
-        services.AddSingleton<MyClass>();        
-    })
-    .Build();
-
-var myClass = host.Services.GetService<MyClass>();
-await myClass!.DoStuff();
-
-await host.RunAsync();
+Console.WriteLine("Hello world");
+// using IHost host = Host.CreateDefaultBuilder(args)
+//     .ConfigureServices(services =>
+//     {
+//         services.Add(ServiceDescriptor.Singleton<>());
+//         services.AddSingleton<MyClass2>();        
+//         services.AddSingleton<MyClass>();        
+//     })
+//     .Build();
+//
+// var myClass = host.Services.GetService<MyClass>();
+// await myClass!.DoStuff();
+//
+// await host.RunAsync();
 
 // Generate all code depending all 2 classes

@@ -22,7 +22,6 @@ internal partial class MatchTickManager<TMatchData, TPlayerIndex, TAuthData, TPl
 
     public struct MyMessage : INetworkPayload
     {
-        
     }
     // Generated
     private readonly IEnumerable<IMatchMessageHandler<MyMessage, TMatchData, TPlayerIndex, TAuthData, TPlayer>>
@@ -37,7 +36,8 @@ internal partial class MatchTickManager<TMatchData, TPlayerIndex, TAuthData, TPl
         {
             if (cancellationToken.IsCancellationRequested)
                 return;
-            switch (message.Opcode)
+            // Generate a handler caller for each message id
+            switch (message.MessageId)
             {
                 case 0:
                 {

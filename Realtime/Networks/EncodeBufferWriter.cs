@@ -8,8 +8,9 @@ namespace Realtime.Networks;
 public unsafe struct EncodeBufferWriter : IBufferWriter<byte>, IDisposable
 {
     private void* _buffer;
-    private int _size;
     private readonly int _prepend;
+    public int Size { get; private set; }
+
     public EncodeBufferWriter(int prepend)
     {
         _prepend = prepend;
@@ -21,11 +22,11 @@ public unsafe struct EncodeBufferWriter : IBufferWriter<byte>, IDisposable
     private void CheckSize(in int newSize)
     {
         var actualSize = newSize + _prepend;
-        if (_size >= actualSize)
+        if (Size >= actualSize)
             return;
         Dispose();
-        _size = actualSize;
-        _buffer = NativeMemory.Alloc((nuint)_size);
+        Size = actualSize;
+        _buffer = NativeMemory.Alloc((nuint)Size);
     }
     public Memory<byte> GetMemory(int sizeHint = 0)
     {
@@ -37,13 +38,14 @@ public unsafe struct EncodeBufferWriter : IBufferWriter<byte>, IDisposable
         CheckSize(sizeHint);
         return new Span<byte>(_buffer, sizeHint)[_prepend..];
     }
+
     public BufferPointer<byte> PrependAndGet(in Span<byte> prepend)
     {
-        var result = new Span<byte>(_buffer, _size);
+        var result = new Span<byte>(_buffer, Size);
         for (var i = 0; i < _prepend; i++)
             result[i] = prepend[i];
         
-        var res = new BufferPointer<byte>((byte*)_buffer, _size);
+        var res = new BufferPointer<byte>((byte*)_buffer, Size);
         // Need to return for another usage, so not try to free the memory
         _buffer = null;
         Dispose();
@@ -53,6 +55,6 @@ public unsafe struct EncodeBufferWriter : IBufferWriter<byte>, IDisposable
     {
         if (_buffer is not null)
             NativeMemory.Free(_buffer);
-        _size = default;
+        Size = default;
     }
 }

@@ -2,7 +2,7 @@ using MemoryPack;
 
 namespace Realtime.Networks;
 
-public partial class MessageDecoder<TPlayerIndex> where TPlayerIndex : unmanaged, INetworkIndex
+public partial class MessageDecoder
 {
     public readonly struct DecodeResult
     {
@@ -13,13 +13,14 @@ public partial class MessageDecoder<TPlayerIndex> where TPlayerIndex : unmanaged
     }
     public DecodeResult? Decode(in ReadOnlyMemory<byte> buffer)
     {
+        // The message from clients will be [id opcode payloadLength payload]
         if (buffer.Length <= NetworkMessageCommonInfo.ClientMsgArgumentPosition.HeaderSize)
             return null;
         var bufferSpan = buffer.Span;
         var ownerInx = BitConverter.ToUInt16(bufferSpan[NetworkMessageCommonInfo.ClientMsgArgumentPosition.OwnerIdx]);
-        var id = BitConverter.ToUInt16(bufferSpan[NetworkMessageCommonInfo.ClientMsgArgumentPosition.Message]);
-        var payloadLength = NetworkMessageHelper.GetPayloadLength(id);
+        var id = BitConverter.ToUInt16(bufferSpan[NetworkMessageCommonInfo.ClientMsgArgumentPosition.MessageId]);
         var opcode = BitConverter.ToUInt16(bufferSpan[NetworkMessageCommonInfo.ClientMsgArgumentPosition.Opcode]);
+        var payloadLength = BitConverter.ToUInt16(bufferSpan[NetworkMessageCommonInfo.ClientMsgArgumentPosition.PayloadLength]);
         var newIndex = payloadLength + NetworkMessageCommonInfo.ClientMsgArgumentPosition.HeaderSize + 1; //Add header segment
         return new DecodeResult
         {

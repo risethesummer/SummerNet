@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Collections.Concurrent;
+using System.Net;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using MemoryPack;
@@ -18,11 +19,11 @@ public class TcpSocketTransporter<TPlayerIndex, TAuthData, TPlayer> : ITransport
     where TPlayerIndex : unmanaged, INetworkIndex
     where TPlayer : PlayerData<TPlayerIndex, TAuthData>, INetworkPayload, new()
 {
-    private readonly MessageDecoder<TPlayerIndex> _messageDecoder;
+    private readonly MessageDecoder _messageDecoder;
     private readonly MessageEncoder _messageEncoder;
     private readonly IParallelBuffer<byte> _receivedParallelBufferWrapper;
     private readonly IParallelBuffer<SentMessage<TPlayerIndex>> _sentParallelBufferWrapper;
-    private readonly Dictionary<TPlayerIndex, Socket> _sockets = new();
+    private readonly ConcurrentDictionary<TPlayerIndex, Socket> _sockets = new();
     private readonly List<TPlayerIndex> _indexToPlayerIndex = new();
     private readonly IPlayerAuthenticator<TPlayerIndex, TAuthData, TPlayer> _authenticator;
     private readonly IFactory<uint, PoolableWrapper<uint, AutoSizeBuffer<byte>>> _bufferPool;
@@ -55,8 +56,8 @@ public class TcpSocketTransporter<TPlayerIndex, TAuthData, TPlayer> : ITransport
 
     private void AddPlayer(TPlayerIndex playerIndex, Socket socket)
     {
-        _sockets.Add(playerIndex, socket);
-        _indexToPlayerIndex.Add(playerIndex);
+        if (_sockets.TryAdd(playerIndex, socket))
+            _indexToPlayerIndex.Add(playerIndex);
     }
 
     public async ValueTask InitMatchPlayersAsync(CancellationToken initMatchToken)
@@ -237,6 +238,8 @@ public class TcpSocketTransporter<TPlayerIndex, TAuthData, TPlayer> : ITransport
                 Owner = _indexToPlayerIndex[decodeVal.OwnerIndex],
                 Payload = messages[..decodeVal.EndIndex]
             };
+            if (decodeVal.EndIndex >= messages.Length)
+                break;
             messages = messages[decodeVal.EndIndex..]; //Continue with the remaining part
         }
     }
