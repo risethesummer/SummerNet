@@ -1,7 +1,7 @@
 ﻿using Realtime.Data;
 using Realtime.Networks;
 
-namespace Realtime.Controllers.Handlers.Interfaces;
+namespace Realtime.Controllers.Match.Interfaces;
 
 public interface IMatchInitHandler<TMatchData, TPlayerIndex, TAuthData, TPlayer> 
     where TPlayer : PlayerData<TPlayerIndex, TAuthData>

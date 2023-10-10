@@ -1,9 +1,7 @@
-﻿using System.Buffers;
-using MemoryPack;
+﻿using Realtime.Utils.Buffers;
 
 namespace Realtime.Networks;
 
-[MemoryPackable]
 public readonly struct NetworkMessage<TPlayerIndex, TData> 
     where TData : INetworkPayload where TPlayerIndex : unmanaged, INetworkIndex
 {
@@ -13,12 +11,16 @@ public readonly struct NetworkMessage<TPlayerIndex, TData>
     public MessageType MessageType { get; init; }
 }
 
-public readonly struct RawNetworkMessage<TPlayerIndex> where TPlayerIndex : unmanaged, INetworkIndex
+public readonly struct ReceivedNetworkMessage<TPlayerIndex> : IDisposable where TPlayerIndex : unmanaged, INetworkIndex
 {
     public ushort MessageId { get; init; }
     public ushort Opcode { get; init; }
     public TPlayerIndex Owner { get; init; }
-    public ReadOnlyMemory<byte> Payload { get; init; }
+    public BufferPointer<byte> Payload { get; init; }
+    public void Dispose()
+    {
+        Payload.Dispose();
+    }
 }
 
 public static class NetworkMessageCommonInfo
@@ -38,10 +40,10 @@ public static class NetworkMessageCommonInfo
     {
         public const int HeaderValuesCount = 3;
         public const int HeaderSize = HeaderValuesCount * HeaderArgumentSize;
-        public static readonly Range OwnerIdx = Range.EndAt(HeaderArgumentSize);
-        public static readonly Range MessageId = new(OwnerIdx.End, HeaderArgumentSize * 2); 
-        public static readonly Range Opcode = new(MessageId.End, HeaderArgumentSize * 3);
-        public static readonly Range PayloadLength = new(Opcode.End, HeaderArgumentSize * 4); 
+        // public static readonly Range OwnerIdx = Range.EndAt(HeaderArgumentSize);
+        public static readonly Range MessageId = Range.EndAt(HeaderArgumentSize); 
+        public static readonly Range Opcode = new(MessageId.End, HeaderArgumentSize * 2);
+        public static readonly Range PayloadLength = new(Opcode.End, HeaderArgumentSize * 3); 
     }
 }
 

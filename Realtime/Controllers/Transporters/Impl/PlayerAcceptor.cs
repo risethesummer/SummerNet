@@ -1,14 +1,14 @@
-using System.Net;
-using System.Net.Sockets;
+﻿using System.Net;
 using System.Runtime.CompilerServices;
 using Realtime.Controllers.Filters.Interfaces;
+using Realtime.Controllers.Transporters.Interfaces;
 using Realtime.Data;
 using Realtime.Networks;
 using Realtime.Utils.Buffers;
 using Realtime.Utils.Extensions;
 using Realtime.Utils.Factory;
 
-namespace Realtime.Controllers.Transporters.Interfaces;
+namespace Realtime.Controllers.Transporters.Impl;
 
 public class PlayerAcceptor<TPlayerIndex, TAuthData, TPlayer> : IPlayerAcceptor<TPlayerIndex, TAuthData, TPlayer> 
     where TPlayer : PlayerData<TPlayerIndex, TAuthData>, new() 
@@ -29,6 +29,7 @@ public class PlayerAcceptor<TPlayerIndex, TAuthData, TPlayer> : IPlayerAcceptor<
     public void Dispose()
     {
         _wrappedConnectionAcceptor.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     public async IAsyncEnumerable<TPlayer> BeginAccepting([EnumeratorCancellation] CancellationToken cancellationToken)
@@ -50,28 +51,6 @@ public class PlayerAcceptor<TPlayerIndex, TAuthData, TPlayer> : IPlayerAcceptor<
                     continue;
                 yield return playerData;
             }
-        }
-    }
-}
-
-public class ConnectionAcceptor : IConnectionAcceptor
-{
-    private readonly ISocket _acceptSocket;
-    public ConnectionAcceptor(ISocket acceptSocket)
-    {
-        _acceptSocket = acceptSocket;
-    }
-    public void Dispose()
-    {
-        _acceptSocket.Dispose();
-        GC.SuppressFinalize(this);
-    }
-    public async IAsyncEnumerable<ISocket> BeginAccepting([EnumeratorCancellation] CancellationToken cancellationToken)
-    {
-        while (!cancellationToken.IsCancellationRequested)
-        {
-            var accept = await _acceptSocket.AcceptAsync(cancellationToken).ConfigureAwait(false);
-            yield return accept;
         }
     }
 }

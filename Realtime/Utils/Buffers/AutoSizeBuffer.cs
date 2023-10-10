@@ -16,6 +16,17 @@ public unsafe struct AutoSizeBuffer<T> : IPoolableObject<uint> where T : unmanag
     {
         Resize(capacity);
     }
+    public AutoSizeBuffer(in ReadOnlyMemory<T> data)
+    {
+        Resize((uint)data.Length);
+        Write(data);
+    }
+
+    public static BufferPointer<T> GetBufferPointer(in ReadOnlyMemory<T> data)
+    {
+        var buffer = new AutoSizeBuffer<T>(data);
+        return buffer.BufferPointer;
+    }
     private static readonly nuint Size = (nuint)Unsafe.SizeOf<T>();
     public void Resize(uint size)
     {

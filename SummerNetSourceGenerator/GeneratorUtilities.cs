@@ -1,4 +1,4 @@
-﻿namespace SourceGenerator;
+﻿namespace SummerNetSourceGenerator;
 
 public static class GeneratorUtilities
 {

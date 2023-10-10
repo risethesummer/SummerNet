@@ -68,6 +68,15 @@ public sealed unsafe class UnmanagedMemoryManager<T> : MemoryManager<T>, IPoolab
         _length = 0;
     }
 
+    public ReadOnlyMemory<T> ForgetMemory
+    {
+        get
+        {
+            var mem = Memory;
+            _pointer = null;
+            return mem;
+        }
+    }
     public void Initialize(in BufferPointer<T> param)
     {
         var length = param.Length;

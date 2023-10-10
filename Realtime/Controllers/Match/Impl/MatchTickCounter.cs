@@ -1,4 +1,4 @@
-﻿namespace Realtime.Controllers.Handlers.Impl;
+﻿namespace Realtime.Controllers.Match.Impl;
 
 public class MatchTickCounter
 {

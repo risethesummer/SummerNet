@@ -2,7 +2,7 @@
 using Realtime.Data;
 using Realtime.Networks;
 
-namespace Realtime.Controllers.Handlers.Interfaces;
+namespace Realtime.Controllers.Match.Interfaces;
 
 public interface IMatchRunner<TMatchData, TPlayerIndex, TAuthData, TPlayer> : 
     ITransporter<TPlayerIndex, TAuthData, TPlayer> where TPlayer : PlayerData<TPlayerIndex, TAuthData>

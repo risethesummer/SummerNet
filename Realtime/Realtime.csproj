@@ -10,8 +10,7 @@
 
     <ItemGroup>
         <PackageReference Include="MemoryPack" Version="1.9.16" />
+        <ProjectReference Include="..\SummerNetSourceGenerator\SummerNetSourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     </ItemGroup>
-
-
 
 </Project>

@@ -3,13 +3,13 @@ using Realtime.Utils.Factory;
 
 namespace Realtime.Networks;
 
-public readonly struct SentMessage<TPlayerIndex> : IDisposable
+public readonly struct SentMessage<TPlayerIndex> : IDisposable where TPlayerIndex : unmanaged, INetworkIndex
 { 
     public MessageType MessageType { get; init; }
     public TPlayerIndex Target { get; init; }
-    public AutoDisposableData<ReadOnlyMemory<byte>, UnmanagedMemoryManager<byte>> DisposableDataWrapper { get; init; }
+    public BufferPointer<byte> Payload { get; init; }
     public void Dispose()
     {
-        DisposableDataWrapper.Dispose();
+        Payload.Dispose();
     }
 }

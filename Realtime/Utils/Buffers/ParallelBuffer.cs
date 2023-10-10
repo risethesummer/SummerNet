@@ -2,7 +2,7 @@ using Realtime.Utils.Factory;
 
 namespace Realtime.Utils.Buffers;
 
-public class ParallelBufferWrapper<TWrappedData> : IDisposable, IParallelBuffer<TWrappedData> 
+public class ParallelBuffer<TWrappedData> : IDisposable 
     where TWrappedData : unmanaged
 {
     private AutoSizeBuffer<TWrappedData> _buffer;

@@ -2,7 +2,7 @@ using System;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace SourceGenerator;
+namespace SummerNetSourceGenerator;
 
 public static class RoslynExtensions
 {
@@ -19,8 +19,7 @@ public static class RoslynExtensions
     
     public static INamedTypeSymbol? GetClassOrStructInheritInherit(this GeneratorSyntaxContext context, string interfaceName, bool goDeep)
     {
-        var classDeclarationSyntax = (ClassDeclarationSyntax)context.Node;
-        var symbol = context.SemanticModel.GetSymbolInfo(classDeclarationSyntax).Symbol;
+        var symbol = context.SemanticModel.GetDeclaredSymbol(context.Node);
         if (symbol is not INamedTypeSymbol namedTypeSymbol || !namedTypeSymbol.InheritInterface(interfaceName, goDeep))
         {
             return null;

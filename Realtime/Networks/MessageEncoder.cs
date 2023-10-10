@@ -14,11 +14,11 @@ public class MessageEncoder
     private static void SetHeader<T>(in T data, ref Span<byte> header, in uint opcode, in uint payloadLength) where T : INetworkPayload
     {
         var msgId = NetworkMessageHelper.GetPayloadId(data);
-        BitConverter.TryWriteBytes(header[NetworkMessageCommonInfo.ServerMsgArgumentPosition.MessageId..], msgId); // Write messageId
+        BitConverter.TryWriteBytes(header, msgId); // Write messageId
         BitConverter.TryWriteBytes(header[NetworkMessageCommonInfo.ServerMsgArgumentPosition.Opcode..], opcode); // Write opcode
         BitConverter.TryWriteBytes(header[NetworkMessageCommonInfo.ServerMsgArgumentPosition.PayloadLength..], payloadLength); // Write payloadLength
     }
-    public AutoDisposableData<ReadOnlyMemory<byte>, UnmanagedMemoryManager<byte>> EncodeNonAlloc<TData>(
+    public BufferPointer<byte> EncodeNonAlloc<TData>(
         in uint opcode, in TData payload)
         where TData : INetworkPayload
     {
@@ -34,9 +34,9 @@ public class MessageEncoder
             MemoryPackSerializer.Serialize(ref writer, payload);
             SetHeader(payload, ref header, opcode, (uint)buffer.Size);
             var resultBuffer = buffer.PrependAndGet(header); //Write the header in front of the payload segment
-            var memoryManagerWrapper = _memoryManagerPool.Create(resultBuffer);
-            ref readonly var memoryManager = ref memoryManagerWrapper.WrappedValue;
-            return new AutoDisposableData<ReadOnlyMemory<byte>, UnmanagedMemoryManager<byte>>(memoryManager.Memory, memoryManager);
+            // using var memoryManagerWrapper = _memoryManagerPool.Create(resultBuffer);
+            // ref readonly var memoryManager = ref memoryManagerWrapper.WrappedValue;
+            return resultBuffer;
         }
     }
 }
