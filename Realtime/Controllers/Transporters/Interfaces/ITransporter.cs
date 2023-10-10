@@ -9,7 +9,7 @@ public interface ITransporter<TPlayerIndex, TAuthData, TPlayer> :
     where TPlayerIndex : unmanaged, INetworkIndex
 {
     ValueTask RemovePlayerAsync(TPlayerIndex target);
-    ValueTask<TPlayer> AddPlayerAsync(TPlayer playerData);
+    ValueTask<TPlayer> AddPlayerAsync(TPlayer playerData, ISocket socket);
     ValueTask InitMatchPlayersAsync(CancellationToken cancellationToken);
     void Clear();
 }

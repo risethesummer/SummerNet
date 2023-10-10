@@ -76,37 +76,6 @@ public class TcpSocketTransporter<TPlayerIndex, TAuthData, TPlayer> : ITransport
         await Task.WhenAll(queue);
     }
 
-    private async Task<T?> GetRawMessageAsync<T>(Socket socket, CancellationToken cancellationToken) 
-    {
-        while (!cancellationToken.IsCancellationRequested)
-        {
-            var buffer = new AutoSizeBuffer<byte>(1024); 
-            // Memory manager will free the pointer, so we don't need using keyword
-            using var memoryManagerWrapper = _memoryManagerPool.Create(buffer.BufferPointer);
-            var memory = memoryManagerWrapper.WrappedValue.Memory;
-            var handshakeData = await socket.ReceiveAsync(memory, cancellationToken);
-            var data = MemoryPackSerializer.Deserialize<T>(memory[..handshakeData].Span);
-            return data;
-        }
-        return default;
-    }
-
-    private async Task HandShake(Socket socket, CancellationToken cancellationToken)
-    {
-        var data = await GetRawMessageAsync<TAuthData>(socket, cancellationToken);
-        if (data is not null && socket.RemoteEndPoint is IPEndPoint remoteIpEndPoint)
-        {
-            var playerData = new TPlayer
-            {
-                Address = remoteIpEndPoint.Address,
-                JoinedTime = DateTime.Now,
-                Status = PlayerStatus.Setup,
-                AuthData = data
-            };
-            playerData = await _authenticator.Authenticate(playerData);
-            AddPlayer(playerData.PlayerId, socket);
-        }
-    }
 
     public ValueTask SendMessage<T>(in NetworkMessage<TPlayerIndex, T> msg,
         CancellationToken cancellationToken) where T : unmanaged, INetworkPayload

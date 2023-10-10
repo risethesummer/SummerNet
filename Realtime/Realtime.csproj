@@ -10,14 +10,7 @@
 
     <ItemGroup>
         <PackageReference Include="MemoryPack" Version="1.9.16" />
-
-
-    <ItemGroup>
-      <Folder Include="Controllers\Filters\Impl\" />
     </ItemGroup>
-
-    </ItemGroup>
-
 
 
 
