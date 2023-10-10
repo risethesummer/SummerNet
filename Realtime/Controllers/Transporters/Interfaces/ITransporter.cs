@@ -8,8 +8,7 @@ public interface ITransporter<TPlayerIndex, TAuthData, TPlayer> :
     where TPlayer : PlayerData<TPlayerIndex, TAuthData> 
     where TPlayerIndex : unmanaged, INetworkIndex
 {
-    ValueTask RemovePlayerAsync(TPlayerIndex target);
+    ValueTask RemovePlayerAsync(TPlayerIndex target, CancellationToken cancellationToken);
     ValueTask<TPlayer> AddPlayerAsync(TPlayer playerData, ISocket socket);
-    ValueTask InitMatchPlayersAsync(CancellationToken cancellationToken);
     void Clear();
 }

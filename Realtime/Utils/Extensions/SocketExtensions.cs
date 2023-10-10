@@ -10,7 +10,7 @@ namespace Realtime.Utils.Extensions;
 public static class SocketExtensions
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static async Task FlushReceivedData(this Socket socket, 
+    public static async Task FlushReceivedData(this ISocket socket, 
         Memory<byte> receivedBuffer,
         int ignoreHeader,
         IParallelBuffer<byte> resultParallelBuffer,

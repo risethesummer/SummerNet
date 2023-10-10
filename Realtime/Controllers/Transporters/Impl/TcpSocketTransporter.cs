@@ -23,60 +23,29 @@ public class TcpSocketTransporter<TPlayerIndex, TAuthData, TPlayer> : ITransport
     private readonly MessageEncoder _messageEncoder;
     private readonly IParallelBuffer<byte> _receivedParallelBufferWrapper;
     private readonly IParallelBuffer<SentMessage<TPlayerIndex>> _sentParallelBufferWrapper;
-    private readonly ConcurrentDictionary<TPlayerIndex, Socket> _sockets = new();
+    private readonly ConcurrentDictionary<TPlayerIndex, ISocket> _sockets = new();
     private readonly List<TPlayerIndex> _indexToPlayerIndex = new();
     private readonly IPlayerAuthenticator<TPlayerIndex, TAuthData, TPlayer> _authenticator;
     private readonly IFactory<uint, PoolableWrapper<uint, AutoSizeBuffer<byte>>> _bufferPool;
     private readonly IFactory<PoolableWrapper<DisposableQueue<Task>>> _taskPool;
-
     private readonly IFactory<BufferPointer<byte>,
         PoolableWrapper<BufferPointer<byte>, UnmanagedMemoryManager<byte>>> _memoryManagerPool;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public NetworkMessage<TPlayerIndex, T>? ExtractMessage<T>(byte[] data, in int length) where T : INetworkPayload
-    {
-        var serializeData = data.AsSpan(0, length);
-        var deserializedData = MemoryPackSerializer.Deserialize<NetworkMessage<TPlayerIndex, T>>(serializeData);
-        return deserializedData;
-    }
-
-
-
-    public async ValueTask RemovePlayerAsync(TPlayerIndex target)
+    public async ValueTask RemovePlayerAsync(TPlayerIndex target, CancellationToken cancellationToken)
     {
         if (!_sockets.TryGetValue(target, out var socket))
             return;
-        await socket.DisconnectAsync(false).ConfigureAwait(false);
+        await socket.DisconnectAsync(false, cancellationToken).ConfigureAwait(false);
     }
 
-    public ValueTask<TPlayer> AddPlayerAsync(TPlayer playerData)
+    public ValueTask<TPlayer> AddPlayerAsync(TPlayer playerData, ISocket socket)
     {
-        throw new NotImplementedException();
-    }
-
-    private void AddPlayer(TPlayerIndex playerIndex, Socket socket)
-    {
-        if (_sockets.TryAdd(playerIndex, socket))
-            _indexToPlayerIndex.Add(playerIndex);
-    }
-
-    public async ValueTask InitMatchPlayersAsync(CancellationToken initMatchToken)
-    {
-        using Socket listener = new(
-            AddressFamily.InterNetwork,
-            SocketType.Stream,
-            ProtocolType.Tcp);
-        using var queueTask =  _taskPool.Create();
-        var queue = queueTask.WrappedValue;
-        while (!initMatchToken.IsCancellationRequested)
+        if (_sockets.TryAdd(playerData.PlayerId, socket))
         {
-            var accept = await listener.AcceptAsync(initMatchToken).ConfigureAwait(false);
-            queue.Enqueue(HandShake(accept, initMatchToken));
+            _indexToPlayerIndex.Add(playerData.PlayerId);
+            return ValueTask.FromResult(playerData);
         }
-        await Task.WhenAll(queue);
+        return ValueTask.FromResult<>(null);
     }
-
-
     public ValueTask SendMessage<T>(in NetworkMessage<TPlayerIndex, T> msg,
         CancellationToken cancellationToken) where T : unmanaged, INetworkPayload
     {
@@ -87,7 +56,6 @@ public class TcpSocketTransporter<TPlayerIndex, TAuthData, TPlayer> : ITransport
             return SentMessageToTarget(msg.AssociatedClient, data, cancellationToken);
         return Broadcast(data, cancellationToken);
     }
-
     private async ValueTask SentMessageToTarget(TPlayerIndex target, AutoDisposableData<ReadOnlyMemory<byte>,
         UnmanagedMemoryManager<byte>> msg, CancellationToken token)
     {
@@ -98,7 +66,6 @@ public class TcpSocketTransporter<TPlayerIndex, TAuthData, TPlayer> : ITransport
             await socket.SendAsync(msg.Data, token).ConfigureAwait(false);
         }
     }
-
     private async ValueTask Broadcast(AutoDisposableData<ReadOnlyMemory<byte>, UnmanagedMemoryManager<byte>> msg,
         CancellationToken token)
     {
@@ -111,7 +78,6 @@ public class TcpSocketTransporter<TPlayerIndex, TAuthData, TPlayer> : ITransport
             await Task.WhenAll(queue).ConfigureAwait(false);
         }
     }
-
     public ValueTask SendMessageInline<T>(in NetworkMessage<TPlayerIndex, T> msg,
         CancellationToken cancellationToken) where T : unmanaged, INetworkPayload
     {
@@ -227,7 +193,7 @@ public class TcpSocketTransporter<TPlayerIndex, TAuthData, TPlayer> : ITransport
         await Task.WhenAll(queue);
     }
     
-    private async Task ReceivingMessagesRunner(ushort ownerIndex, Socket socket, CancellationToken cancellationToken)
+    private async Task ReceivingMessagesRunner(ushort ownerIndex, ISocket socket, CancellationToken cancellationToken)
     {
         // Dispose graph: memoryManagerWrapper->memoryManager->buffer
         var buffer = new AutoSizeBuffer<byte>(1024); // Memory manager will free the pointer, so we don't need using keyword
@@ -244,33 +210,5 @@ public class TcpSocketTransporter<TPlayerIndex, TAuthData, TPlayer> : ITransport
                 .ConfigureAwait(false);
         }
     }
-    
-    // public async ValueTask StartReceivingMessagesAsync(CancellationToken cancellationToken)
-    // {
-    //     using var queueTasks = _taskPool.Create();
-    //     var queue = queueTasks.WrappedValue;
-    //     uint countBytes = 0;
-    //     foreach (var socket in _sockets.Values)
-    //         countBytes += (uint)socket.Available;
-    //     if (countBytes <= 0)
-    //         return;
-    //     _receivedParallelBufferWrapper.Resize(countBytes); //Resize to avoid reallocation 
-    //     foreach (var socket in _sockets.Values)
-    //         if (socket.Available > 0)
-    //             queue.Enqueue(FlushTaskRunner(socket, cancellationToken));
-    //     await Task.WhenAll(queue);
-    // }
-    //
-    // private async Task FlushTaskRunner(Socket socket, CancellationToken cancellationToken)
-    // {
-    //     var available = socket.Available;
-    //     if (available == 0)
-    //         return;
-    //     using var buffer = new AutoSizeBuffer<byte>((uint)available);
-    //     using var memoryManagerWrapper = _memoryManagerPool.Create(buffer.DangerousBuffer);
-    //     var memoryManager = memoryManagerWrapper.WrappedValue;
-    //     await socket.FlushReceivedData(memoryManager.Memory,
-    //             _receivedParallelBufferWrapper, cancellationToken)
-    //         .ConfigureAwait(false);
-    // }
+ 
 }
