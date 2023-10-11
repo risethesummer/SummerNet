@@ -1,27 +1,4 @@
-﻿using Realtime.Utils.Buffers;
-
-namespace Realtime.Networks;
-
-public readonly struct NetworkMessage<TPlayerIndex, TData> 
-    where TData : INetworkPayload where TPlayerIndex : unmanaged, INetworkIndex
-{
-    public ushort Opcode { get; init; }
-    public TData Payload { get; init; }
-    public TPlayerIndex AssociatedClient { get; init; }
-    public MessageType MessageType { get; init; }
-}
-
-public readonly struct ReceivedNetworkMessage<TPlayerIndex> : IDisposable where TPlayerIndex : unmanaged, INetworkIndex
-{
-    public ushort MessageId { get; init; }
-    public ushort Opcode { get; init; }
-    public TPlayerIndex Owner { get; init; }
-    public BufferPointer<byte> Payload { get; init; }
-    public void Dispose()
-    {
-        Payload.Dispose();
-    }
-}
+﻿namespace Realtime.Controllers.Transporters.Messages;
 
 public static class NetworkMessageCommonInfo
 {
@@ -46,20 +23,3 @@ public static class NetworkMessageCommonInfo
         public static readonly Range PayloadLength = new(Opcode.End, HeaderArgumentSize * 3); 
     }
 }
-
-
-public interface INetworkIndex
-{
-}
-
-public enum MessageType
-{
-    ServerToClient, ClientToSever, Broadcast, 
-}
-
-public interface INetworkPayload
-{
-}
-
-// Id => Length
-// Data

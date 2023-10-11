@@ -1,7 +1,9 @@
 using MemoryPack;
+using Realtime.Networks;
 using Realtime.Utils.Buffers;
 using Realtime.Utils.Factory;
-namespace Realtime.Networks;
+
+namespace Realtime.Controllers.Transporters.Messages;
 
 public class MessageEncoder
 {

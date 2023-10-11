@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Realtime.Utils.Extensions;
 using Realtime.Utils.Factory;
 
 namespace Realtime.Utils.Buffers;
@@ -11,7 +12,7 @@ public unsafe struct AutoSizeBuffer<T> : IPoolableObject<uint> where T : unmanag
     private int _endIndex = -1;
     public int Length => _endIndex + 1;
     public uint Capacity { get; private set; }
-    private const int SingleLength = 1;
+    private static readonly nuint Size = (nuint)Unsafe.SizeOf<T>();
     public AutoSizeBuffer(uint capacity)
     {
         Resize(capacity);
@@ -27,13 +28,12 @@ public unsafe struct AutoSizeBuffer<T> : IPoolableObject<uint> where T : unmanag
         var buffer = new AutoSizeBuffer<T>(data);
         return buffer.BufferPointer;
     }
-    private static readonly nuint Size = (nuint)Unsafe.SizeOf<T>();
     public void Resize(uint size)
     {
         if (size == Length)
             return;
-        _buffer = NativeMemory.Realloc(_buffer, Size);
         Capacity = size;
+        _buffer = NativeMemory.Realloc(_buffer, Size * Capacity);
     }
 
     public void Clear()
@@ -41,30 +41,32 @@ public unsafe struct AutoSizeBuffer<T> : IPoolableObject<uint> where T : unmanag
         _endIndex = -1;
     }
 
-    // [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    // public T[] AllocArray()
-    // {
-    //     var res = new T[Length];
-    //     _buffer.ReadArray(0, res, 0, res.Length);
-    //     return res;
-    // }
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void CheckToResizeIfNecessary(in int length)
+    private void CheckToResizeIfNecessary(in int inc)
     {
         var oldLength = Length;
         var remainingLength = Capacity - oldLength;
-        var newLength = oldLength + length;
-        if (length > remainingLength)
+        var newLength = oldLength + inc;
+        if (inc > remainingLength)
             Resize((uint)newLength);
     }
 
-    public void Write<TData>(in TData data, int length = SingleLength)
+    public void Write(in T data)
     {
+        CheckToResizeIfNecessary(1);
+        Unsafe.Write(Unsafe.Add<T>(_buffer, Length), data);
+        _endIndex += 1;
+    }
+    
+    public void Write(in ReadOnlyMemory<T> data)
+    {
+        var length = data.Length;
         CheckToResizeIfNecessary(length);
+        NativeMemory.Copy(Unsafe.Add<T>(_buffer, Length), data.AsPointer(), (nuint)length * Size);
         Unsafe.Write(Unsafe.Add<T>(_buffer, Length), data);
         _endIndex += length;
     }
+
 
     public BufferPointer<T> BufferPointer => new((T*)_buffer, Length);
     

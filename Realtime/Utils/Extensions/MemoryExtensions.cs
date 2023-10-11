@@ -28,5 +28,17 @@ public static class MemoryExtensions
         var buffer = Unsafe.AsPointer(ref memoryRef);
         NativeMemory.Free(buffer);
     }
+    public static unsafe void* AsPointer<T>(this Memory<T> memory)
+    {
+        ref var memoryRef = ref MemoryMarshal.GetReference(memory.Span);
+        var buffer = Unsafe.AsPointer(ref memoryRef);
+        return buffer;
+    }
+    public static unsafe void* AsPointer<T>(this ReadOnlyMemory<T> memory)
+    {
+        ref var memoryRef = ref MemoryMarshal.GetReference(memory.Span);
+        var buffer = Unsafe.AsPointer(ref memoryRef);
+        return buffer;
+    }
     public static void Free<T>(this Memory<T> memory) => ((ReadOnlyMemory<T>)memory).Free();
 }

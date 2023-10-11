@@ -1,7 +1,6 @@
 using Realtime.Utils.Buffers;
-using Realtime.Utils.Factory;
 
-namespace Realtime.Networks;
+namespace Realtime.Controllers.Transporters.Messages;
 
 public readonly struct SentMessage<TPlayerIndex> : IDisposable where TPlayerIndex : unmanaged, INetworkIndex
 { 

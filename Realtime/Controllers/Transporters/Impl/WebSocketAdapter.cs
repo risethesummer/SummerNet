@@ -7,19 +7,11 @@ namespace Realtime.Controllers.Transporters.Impl;
 public class WebSocketAdapter : ISocket
 {
     private readonly WebSocket _socket;
-    private static WebSocketManager? _webSocketManager;
-    public WebSocketAdapter(WebSocket socket)
+    private readonly IPEndPoint _remoteEndPoint;
+    public WebSocketAdapter(WebSocket socket, IPEndPoint remoteEndPoint)
     {
         _socket = socket;
-    }
-    public static void SetManager(WebSocketManager webSocketManager)
-    {
-        _webSocketManager = webSocketManager;
-    }
-    public async ValueTask<ISocket> AcceptAsync(CancellationToken cancellationToken)
-    {
-        var accepted = await _webSocketManager.AcceptWebSocketAsync();
-        return new WebSocketAdapter(accepted);
+        _remoteEndPoint = remoteEndPoint;
     }
 
     public async ValueTask<int> ReceiveAsync(Memory<byte> buffer, CancellationToken cancellationToken)
@@ -44,7 +36,7 @@ public class WebSocketAdapter : ISocket
     public ValueTask DisconnectAsync(bool reuse, CancellationToken cancellationToken) =>
         new(_socket.CloseAsync(WebSocketCloseStatus.Empty, string.Empty, cancellationToken));
 
-    public EndPoint? EndPoint => null;
+    public EndPoint EndPoint => _remoteEndPoint;
 
     public void Dispose()
     {

@@ -1,9 +1,6 @@
-using MemoryPack;
-using Realtime.Utils.Buffers;
+namespace Realtime.Controllers.Transporters.Messages;
 
-namespace Realtime.Networks;
-
-public partial class MessageDecoder
+public class MessageDecoder
 {
     public readonly struct DecodeResult
     {

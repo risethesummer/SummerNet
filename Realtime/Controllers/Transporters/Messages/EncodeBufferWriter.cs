@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Realtime.Utils.Buffers;
 
-namespace Realtime.Networks;
+namespace Realtime.Controllers.Transporters.Messages;
 
 public unsafe struct EncodeBufferWriter : IBufferWriter<byte>, IDisposable
 {

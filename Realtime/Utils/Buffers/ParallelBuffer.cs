@@ -31,7 +31,7 @@ public class ParallelBuffer<TWrappedData> : IDisposable
         try
         {
             await _semaphoreSlim.WaitAsync(token).ConfigureAwait(false);
-            _buffer.Write(data, data.Length);
+            _buffer.Write(data);
         }
         finally
         {
