@@ -26,10 +26,14 @@ internal partial class MatchTickManager<TMatchData, TPlayerIndex, TAuthData, TPl
 
  
     // Generated
-    private readonly IEnumerable<IMatchMessageHandler<MyMessage, TMatchData, TPlayerIndex, TAuthData, TPlayer>>
-        _myMessageHandlers;    
-    private readonly IEnumerable<IMatchMessageAsyncHandler<MyMessage, TMatchData, TPlayerIndex, TAuthData, TPlayer>>
-        _myMessageAsyncHandlers;
+    // Base on opcode 0
+    private readonly IMatchMessageHandler<MyMessage, TMatchData, TPlayerIndex, TAuthData, TPlayer>[] _0MessageHandlers;
+    private readonly IEnumerable<IMatchMessageAsyncHandler<MyMessage, TMatchData, TPlayerIndex, TAuthData, TPlayer>> _0MessageAsyncHandlers;
+    
+    // private readonly IEnumerable<IMatchMessageHandler<MyMessage, TMatchData, TPlayerIndex, TAuthData, TPlayer>>
+    //     _myMessageHandlers;    
+    // private readonly IEnumerable<IMatchMessageAsyncHandler<MyMessage, TMatchData, TPlayerIndex, TAuthData, TPlayer>>
+    //     _myMessageAsyncHandlers;
     
     private readonly UnmanagedMemoryManager<byte> memoryManager;
     private readonly Queue<Task> receivedTasks;
@@ -80,9 +84,9 @@ internal partial class MatchTickManager<TMatchData, TPlayerIndex, TAuthData, TPl
                     Payload = MemoryPackSerializer.Deserialize<MyMessage>(byteData.Span),
                     MessageType = MessageType.ClientToSever
                 };
-                foreach (var handler in _myMessageHandlers)
+                foreach (var handler in _0MessageHandlers)
                     handler.OnMessage(_matchRunner, tick, order, msg);
-                foreach (var handler in _myMessageAsyncHandlers)
+                foreach (var handler in _0MessageAsyncHandlers)
                     taskQueue.Enqueue(handler.OnMessage(_matchRunner, tick, order, msg, cancellationToken).AsTask());
                 byteData.Free();
                 break;

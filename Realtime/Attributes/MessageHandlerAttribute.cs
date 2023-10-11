@@ -4,10 +4,8 @@
 public class MessageHandlerAttribute : Attribute
 {
     public readonly int Opcode;
-    public readonly string? After;
-    public MessageHandlerAttribute(int opcode, string? after)
+    public MessageHandlerAttribute(int opcode)
     {
         Opcode = opcode;
-        After = after;
     }
 }
