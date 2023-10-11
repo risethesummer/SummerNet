@@ -7,8 +7,8 @@ public interface IMatchMessageHandler<TMessageData, TMatchData, TPlayerIndex, TA
     where TMessageData : unmanaged, INetworkPayload
     where TPlayer : PlayerData<TPlayerIndex, TAuthData>
     where TMatchData : MatchData<TPlayerIndex, TAuthData, TPlayer>
-    where TPlayerIndex : unmanaged, INetworkIndex
+    where TPlayerIndex : unmanaged
 {
-    void OnMessage(IMatchRunner<TMatchData, TPlayerIndex, TAuthData, TPlayer> matchRunner, int tick, in int messageOrderInTick,
-        in NetworkMessage<TPlayerIndex, TMessageData> message);
+    void OnMessage(IMatchContext<TMatchData, TPlayerIndex, TAuthData, TPlayer> matchContext, 
+        in ReceivedNetworkMessage<TPlayerIndex, TMessageData> message);
 }

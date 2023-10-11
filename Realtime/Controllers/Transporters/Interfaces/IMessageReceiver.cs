@@ -2,9 +2,9 @@
 
 namespace Realtime.Controllers.Transporters.Interfaces;
 
-public interface IMessageReceiver<TPlayerIndex> where TPlayerIndex : unmanaged, INetworkIndex
+public interface IMessageReceiver<TPlayerIndex> where TPlayerIndex : unmanaged
 {
     // Task<T> WaitForMessage<T>(uint opcode, int count);
-    ValueTask<ReadOnlyMemory<ReceivedNetworkMessage<TPlayerIndex>>> FlushReceivedMessagesAsync(CancellationToken cancellationToken);
+    ValueTask<ReadOnlyMemory<RawReceivedNetworkMessage<TPlayerIndex>>> FlushReceivedMessagesAsync(CancellationToken cancellationToken);
     ValueTask StartReceivingMessagesAsync(CancellationToken cancellationToken);
 }

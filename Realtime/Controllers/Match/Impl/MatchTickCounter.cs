@@ -2,7 +2,7 @@
 
 public class MatchTickCounter
 {
-    public int Tick { get; private set; } = 0;
+    public ulong Tick { get; private set; } = 0;
     private readonly TimeSpan _tickWait;
     public MatchTickCounter(int tickRate)
     {

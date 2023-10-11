@@ -8,5 +8,5 @@
 /// <typeparam name="TPlayer"></typeparam>
 public interface IMatchDataProvider<TMatchData, TPlayerIndex, TPlayer>
 {
-    Task<TMatchData> ProvideMatchData();
+    ValueTask<TMatchData> ProvideMatchData();
 }

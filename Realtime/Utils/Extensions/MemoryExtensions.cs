@@ -5,13 +5,6 @@ namespace Realtime.Utils.Extensions;
 
 public static class MemoryExtensions
 {
-
-    public static unsafe void FreeUnderlyingBuffer<T>(this in Memory<T> memory)
-    {
-        ref var memoryRef = ref MemoryMarshal.GetReference(memory.Span);
-        var buffer = Unsafe.AsPointer(ref memoryRef);
-        NativeMemory.Free(buffer);
-    }
     public static void Dispose<T>(this Memory<T> enumerable) where T : IDisposable
     {
         foreach (var t in enumerable.Span)
@@ -24,8 +17,7 @@ public static class MemoryExtensions
     }
     public static unsafe void Free<T>(this ReadOnlyMemory<T> memory)
     {
-        ref var memoryRef = ref MemoryMarshal.GetReference(memory.Span);
-        var buffer = Unsafe.AsPointer(ref memoryRef);
+        var buffer = memory.AsPointer();
         NativeMemory.Free(buffer);
     }
     public static unsafe void* AsPointer<T>(this Memory<T> memory)

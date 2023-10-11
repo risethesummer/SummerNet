@@ -1,14 +1,12 @@
-﻿using Realtime.Utils.Buffers;
+﻿namespace Realtime.Controllers.Transporters.Messages;
 
-namespace Realtime.Controllers.Transporters.Messages;
-
-public readonly struct ReceivedNetworkMessage<TPlayerIndex> : IDisposable where TPlayerIndex : unmanaged, INetworkIndex
+public readonly struct ReceivedNetworkMessage<TPlayerIndex, TData> 
+    where TData : INetworkPayload where TPlayerIndex : unmanaged
 {
     public ushort Opcode { get; init; }
-    public TPlayerIndex Owner { get; init; }
-    public BufferPointer<byte> Payload { get; init; }
-    public void Dispose()
-    {
-        Payload.Dispose();
-    }
+    public ulong Tick { get; init; }
+    public ushort OrderInTick { get; init; }
+    public TData Payload { get; init; }
+    public TPlayerIndex AssociatedClient { get; init; }
+    public MessageType MessageType { get; init; }
 }

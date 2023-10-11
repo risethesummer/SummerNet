@@ -1,16 +1,15 @@
-﻿using Realtime.Controllers.Transporters.Messages;
-
-namespace Realtime.Data;
+﻿namespace Realtime.Data;
 
 public class MatchData<TPlayerIndex, TAuthData, TPlayer> 
     where TPlayer : PlayerData<TPlayerIndex, TAuthData> 
-    where TPlayerIndex : unmanaged, INetworkIndex
+    where TPlayerIndex : unmanaged
 {
     public string Id { get; init; } = Guid.NewGuid().ToString();
     public DateTime CreatedTime { get; init; } = DateTime.Now;
     public int TickRate { get; init; } = 30;
+    public MatchStatus Status { get; set; } = MatchStatus.Starting;
     public int Ticks { get; set; }
-    public MatchStatus Status { get; set; } = MatchStatus.Waiting;
+    public int MaxPlayers { get; init; }
     public IDictionary<TPlayerIndex, TPlayer> Players { get; init; }
 }
 

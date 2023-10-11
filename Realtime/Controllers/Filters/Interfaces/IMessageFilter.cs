@@ -4,7 +4,7 @@ namespace Realtime.Controllers.Filters.Interfaces;
 
 public interface IMessageFilter<TPlayerIndex, TData> 
     where TData : unmanaged, INetworkPayload 
-    where TPlayerIndex : unmanaged, INetworkIndex
+    where TPlayerIndex : unmanaged
 {
-    Task<TData> Filter(NetworkMessage<TPlayerIndex, TData> data);
+    Task<TData> Filter(SentNetworkMessage<TPlayerIndex, TData> data);
 }

@@ -2,7 +2,6 @@
 using System.Runtime.CompilerServices;
 using Realtime.Controllers.Filters.Interfaces;
 using Realtime.Controllers.Transporters.Interfaces;
-using Realtime.Controllers.Transporters.Messages;
 using Realtime.Data;
 using Realtime.Utils.Buffers;
 using Realtime.Utils.Extensions;
@@ -12,7 +11,7 @@ namespace Realtime.Controllers.Transporters.Impl;
 
 public class PlayerAcceptor<TPlayerIndex, TAuthData, TPlayer> : IPlayerAcceptor<TPlayerIndex, TAuthData, TPlayer> 
     where TPlayer : PlayerData<TPlayerIndex, TAuthData>, new() 
-    where TPlayerIndex : unmanaged, INetworkIndex
+    where TPlayerIndex : unmanaged
 {
     private readonly IConnectionAcceptor _wrappedConnectionAcceptor;
     private readonly IPlayerAuthenticator<TPlayerIndex, TAuthData, TPlayer> _authenticator;

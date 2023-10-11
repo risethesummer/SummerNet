@@ -1,14 +1,11 @@
 ﻿using System.Net;
-using Realtime.Controllers.Transporters.Messages;
 
 namespace Realtime.Data;
 
-public class PlayerData<TId, TAuthData> 
-    where TId : unmanaged, INetworkIndex 
+public class PlayerData<TId, TAuthData> where TId : unmanaged 
 {
     public TId PlayerId { get; set; }
-    public string Name { get; set; }
-    public TAuthData AuthData { get; init; }
+    public TAuthData? AuthData { get; init; }
     public required DateTime JoinedTime { get; init; }
     public required IPAddress Address { get; init; }
     public required PlayerStatus Status { get; set; }

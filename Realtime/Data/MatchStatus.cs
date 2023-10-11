@@ -2,5 +2,5 @@
 
 public enum MatchStatus
 {
-    Waiting, Starting, Running, Pausing, Ended
+    Starting, Running, Pausing, Ended
 }

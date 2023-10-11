@@ -42,6 +42,7 @@ public class ObjectPooling<T> : ObjectPool<T>, IFactory<T> where T : IPoolableOb
     public T Create()
     {
         var obj = Deque() ?? _factory.Create();
+        obj.Initialize();
         return obj;
     }
 }

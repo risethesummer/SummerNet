@@ -1,17 +1,16 @@
-﻿using Realtime.Controllers.Transporters.Messages;
-using Realtime.Data;
+﻿using Realtime.Data;
 
 namespace Realtime.Controllers.Match.Interfaces;
 
 public interface IMatchInitHandler<TMatchData, TPlayerIndex, TAuthData, TPlayer> 
     where TPlayer : PlayerData<TPlayerIndex, TAuthData>
     where TMatchData : MatchData<TPlayerIndex, TAuthData, TPlayer>
-    where TPlayerIndex : unmanaged, INetworkIndex
+    where TPlayerIndex : unmanaged
 {
     /// <summary>
     /// 
     /// </summary>
-    /// <param name="matchRunner"></param>
+    /// <param name="matchContext"></param>
     /// <returns>Is the match initialized successfully or not (false means ending the match)</returns>
-    ValueTask<bool> OnInitialize(IMatchRunner<TMatchData, TPlayerIndex, TAuthData, TPlayer> matchRunner);
+    ValueTask<bool> OnInitialize(IMatchContext<TMatchData, TPlayerIndex, TAuthData, TPlayer> matchContext);
 }

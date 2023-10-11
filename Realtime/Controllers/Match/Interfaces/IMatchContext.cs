@@ -1,13 +1,15 @@
 ﻿using Realtime.Controllers.Transporters.Interfaces;
-using Realtime.Controllers.Transporters.Messages;
 using Realtime.Data;
 
 namespace Realtime.Controllers.Match.Interfaces;
 
-public interface IMatchRunner<TMatchData, TPlayerIndex, TAuthData, TPlayer> : 
-    ITransporter<TPlayerIndex, TAuthData, TPlayer> where TPlayer : PlayerData<TPlayerIndex, TAuthData>
+
+
+public interface IMatchContext<TMatchData, TPlayerIndex, TAuthData, TPlayer> : 
+    ITransporter<TPlayerIndex, TAuthData, TPlayer> 
+    where TPlayer : PlayerData<TPlayerIndex, TAuthData>
     where TMatchData : MatchData<TPlayerIndex, TAuthData, TPlayer>
-    where TPlayerIndex : unmanaged, INetworkIndex
+    where TPlayerIndex : unmanaged
 {
     TMatchData MatchData { get; }
     void RegisterInitializeHandler(IMatchInitHandler<TMatchData, TPlayerIndex, TAuthData, TPlayer> handler);

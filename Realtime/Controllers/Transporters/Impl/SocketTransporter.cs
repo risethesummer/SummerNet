@@ -13,13 +13,13 @@ namespace Realtime.Controllers.Transporters.Impl;
 // Decode into segment
 
 public class SocketTransporter<TPlayerIndex, TAuthData, TPlayer> : ITransporter<TPlayerIndex, TAuthData, TPlayer>
-    where TPlayerIndex : unmanaged, INetworkIndex
+    where TPlayerIndex : unmanaged
     where TPlayer : PlayerData<TPlayerIndex, TAuthData>, INetworkPayload, new()
 {
     private readonly MessageDecoder _messageDecoder;
     private readonly MessageEncoder _messageEncoder;
-    private readonly ParallelBuffer<ReceivedNetworkMessage<TPlayerIndex>> _receivedParallelBufferWrapper;
-    private readonly ParallelBuffer<SentMessage<TPlayerIndex>> _sentParallelBufferWrapper;
+    private readonly ParallelBuffer<RawReceivedNetworkMessage<TPlayerIndex>> _receivedParallelBufferWrapper;
+    private readonly ParallelBuffer<DecodedSentMessage<TPlayerIndex>> _sentParallelBufferWrapper;
     private readonly ConcurrentDictionary<TPlayerIndex, ISocket> _sockets = new();
     private readonly List<TPlayerIndex> _indexToPlayerIndex = new();
     private readonly IPlayerAuthenticator<TPlayerIndex, TAuthData, TPlayer> _authenticator;
@@ -43,7 +43,7 @@ public class SocketTransporter<TPlayerIndex, TAuthData, TPlayer> : ITransporter<
         }
         return ValueTask.FromResult<>(null);
     }
-    public ValueTask SendMessage<T>(in NetworkMessage<TPlayerIndex, T> msg,
+    public ValueTask SendMessage<T>(in SentNetworkMessage<TPlayerIndex, T> msg,
         CancellationToken cancellationToken) where T : unmanaged, INetworkPayload
     {
         if (!_sockets.ContainsKey(msg.AssociatedClient))
@@ -77,14 +77,14 @@ public class SocketTransporter<TPlayerIndex, TAuthData, TPlayer> : ITransporter<
             await Task.WhenAll(queue).ConfigureAwait(false);
         }
     }
-    public ValueTask SendMessageInline<T>(in NetworkMessage<TPlayerIndex, T> msg,
+    public ValueTask SendMessageInline<T>(in SentNetworkMessage<TPlayerIndex, T> msg,
         CancellationToken cancellationToken) where T : unmanaged, INetworkPayload
     {
         if (!_sockets.ContainsKey(msg.AssociatedClient))
             return ValueTask.CompletedTask;
         var data = _messageEncoder.EncodeNonAlloc(msg.Opcode, msg.Payload);
         // We're not disposing the message here but when flushing to send them in tick
-        return _sentParallelBufferWrapper.AddToBuffer(new SentMessage<TPlayerIndex>
+        return _sentParallelBufferWrapper.AddToBuffer(new DecodedSentMessage<TPlayerIndex>
         {
             Payload = data,
             MessageType = msg.MessageType,
@@ -111,7 +111,7 @@ public class SocketTransporter<TPlayerIndex, TAuthData, TPlayer> : ITransporter<
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void SendMessagesToQueue(in Memory<SentMessage<TPlayerIndex>> messages,
+    private void SendMessagesToQueue(in Memory<DecodedSentMessage<TPlayerIndex>> messages,
         in Queue<Task> queue, in CancellationToken cancellationToken)
     {
         using var memoryManagerWrapper = _memoryManagerPool.Create(new BufferPointer<byte>());
@@ -125,7 +125,7 @@ public class SocketTransporter<TPlayerIndex, TAuthData, TPlayer> : ITransporter<
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void SendMessageInternal(in SentMessage<TPlayerIndex> message, in UnmanagedMemoryManager<byte> memoryManager,
+    private void SendMessageInternal(in DecodedSentMessage<TPlayerIndex> message, in UnmanagedMemoryManager<byte> memoryManager,
         in Queue<Task> queueTask, CancellationToken cancellationToken)
     {
         var sentData = message.Payload.GetMemory(memoryManager);
@@ -158,7 +158,7 @@ public class SocketTransporter<TPlayerIndex, TAuthData, TPlayer> : ITransporter<
         _sentParallelBufferWrapper.Clear();
     }
 
-    public async ValueTask<ReadOnlyMemory<ReceivedNetworkMessage<TPlayerIndex>>> FlushReceivedMessagesAsync(CancellationToken cancellationToken)
+    public async ValueTask<ReadOnlyMemory<RawReceivedNetworkMessage<TPlayerIndex>>> FlushReceivedMessagesAsync(CancellationToken cancellationToken)
     {
         using var messagesBuffer = await
             _receivedParallelBufferWrapper.GetBuffer(cancellationToken).ConfigureAwait(false);
@@ -213,7 +213,7 @@ public class SocketTransporter<TPlayerIndex, TAuthData, TPlayer> : ITransporter<
                     var decodeVal = decode.Value;
                     // Alloc another buffer for BufferPointer
                     var payload = AutoSizeBuffer<byte>.GetBufferPointer(received[..decodeVal.Length]);
-                    await _receivedParallelBufferWrapper.AddToBuffer(new ReceivedNetworkMessage<TPlayerIndex>
+                    await _receivedParallelBufferWrapper.AddToBuffer(new RawReceivedNetworkMessage<TPlayerIndex>
                     {
                         Opcode = decodeVal.Opcode,
                         Owner = _indexToPlayerIndex[ownerIndex],

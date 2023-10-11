@@ -2,7 +2,7 @@ using Realtime.Utils.Buffers;
 
 namespace Realtime.Controllers.Transporters.Messages;
 
-public readonly struct SentMessage<TPlayerIndex> : IDisposable where TPlayerIndex : unmanaged, INetworkIndex
+public readonly struct DecodedSentMessage<TPlayerIndex> : IDisposable where TPlayerIndex : unmanaged
 { 
     public MessageType MessageType { get; init; }
     public TPlayerIndex Target { get; init; }
