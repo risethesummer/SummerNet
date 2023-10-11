@@ -4,7 +4,6 @@ public class MessageDecoder
 {
     public readonly struct DecodeResult
     {
-        public ushort MessageId { get; init; }
         public ushort Opcode { get; init; }
         public int Length { get; init; }
     }
@@ -15,7 +14,6 @@ public class MessageDecoder
         if (bufferLength <= NetworkMessageCommonInfo.ClientMsgArgumentPosition.HeaderSize)
             return null;
         var bufferSpan = buffer.Span;
-        var id = BitConverter.ToUInt16(bufferSpan[NetworkMessageCommonInfo.ClientMsgArgumentPosition.MessageId]);
         var opcode = BitConverter.ToUInt16(bufferSpan[NetworkMessageCommonInfo.ClientMsgArgumentPosition.Opcode]);
         var payloadLength = BitConverter.ToUInt16(bufferSpan[NetworkMessageCommonInfo.ClientMsgArgumentPosition.PayloadLength]);
         var totalLength = payloadLength + NetworkMessageCommonInfo.ClientMsgArgumentPosition.HeaderSize + 1; //Add header segment
@@ -23,7 +21,6 @@ public class MessageDecoder
             return null;
         return new DecodeResult
         {
-            MessageId = id,
             Opcode = opcode,
             Length = totalLength
         };

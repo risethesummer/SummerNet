@@ -4,7 +4,6 @@ using Realtime.Controllers.Filters.Interfaces;
 using Realtime.Controllers.Transporters.Interfaces;
 using Realtime.Controllers.Transporters.Messages;
 using Realtime.Data;
-using Realtime.Networks;
 using Realtime.Utils.Buffers;
 using Realtime.Utils.Extensions;
 using Realtime.Utils.Factory;
@@ -216,7 +215,6 @@ public class SocketTransporter<TPlayerIndex, TAuthData, TPlayer> : ITransporter<
                     var payload = AutoSizeBuffer<byte>.GetBufferPointer(received[..decodeVal.Length]);
                     await _receivedParallelBufferWrapper.AddToBuffer(new ReceivedNetworkMessage<TPlayerIndex>
                     {
-                        MessageId = decodeVal.MessageId,
                         Opcode = decodeVal.Opcode,
                         Owner = _indexToPlayerIndex[ownerIndex],
                         Payload = payload

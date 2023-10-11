@@ -1,6 +1,4 @@
 ﻿using Realtime.Controllers.Transporters.Messages;
-using Realtime.Networks;
-
 namespace Realtime.Controllers.Transporters.Interfaces;
 
 public interface IMessageDistributor<TPlayerIndex> where TPlayerIndex : unmanaged, INetworkIndex

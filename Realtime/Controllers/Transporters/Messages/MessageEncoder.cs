@@ -1,5 +1,4 @@
 using MemoryPack;
-using Realtime.Networks;
 using Realtime.Utils.Buffers;
 using Realtime.Utils.Factory;
 
@@ -13,12 +12,10 @@ public class MessageEncoder
         _memoryManagerPool = memoryManagerPool;
     }
 
-    private static void SetHeader<T>(in T data, ref Span<byte> header, in uint opcode, in uint payloadLength) where T : INetworkPayload
+    private static void SetHeader(ref Span<byte> header, in uint opcode, in uint payloadLength)
     {
-        var msgId = NetworkMessageHelper.GetPayloadId(data);
-        BitConverter.TryWriteBytes(header, msgId); // Write messageId
-        BitConverter.TryWriteBytes(header[NetworkMessageCommonInfo.ServerMsgArgumentPosition.Opcode..], opcode); // Write opcode
-        BitConverter.TryWriteBytes(header[NetworkMessageCommonInfo.ServerMsgArgumentPosition.PayloadLength..], payloadLength); // Write payloadLength
+        BitConverter.TryWriteBytes(header[NetworkMessageCommonInfo.ServerMsgArgumentPosition.Opcode], opcode); // Write opcode
+        BitConverter.TryWriteBytes(header[NetworkMessageCommonInfo.ServerMsgArgumentPosition.PayloadLength], payloadLength); // Write payloadLength
     }
     public BufferPointer<byte> EncodeNonAlloc<TData>(
         in uint opcode, in TData payload)
@@ -34,7 +31,7 @@ public class MessageEncoder
             var options = MemoryPackWriterOptionalStatePool.Rent(null);
             var writer = new MemoryPackWriter<EncodeBufferWriter>(ref buffer, options);
             MemoryPackSerializer.Serialize(ref writer, payload);
-            SetHeader(payload, ref header, opcode, (uint)buffer.Size);
+            SetHeader(ref header, opcode, (uint)buffer.Size);
             var resultBuffer = buffer.PrependAndGet(header); //Write the header in front of the payload segment
             // using var memoryManagerWrapper = _memoryManagerPool.Create(resultBuffer);
             // ref readonly var memoryManager = ref memoryManagerWrapper.WrappedValue;

@@ -4,7 +4,6 @@ namespace Realtime.Controllers.Transporters.Messages;
 
 public readonly struct ReceivedNetworkMessage<TPlayerIndex> : IDisposable where TPlayerIndex : unmanaged, INetworkIndex
 {
-    public ushort MessageId { get; init; }
     public ushort Opcode { get; init; }
     public TPlayerIndex Owner { get; init; }
     public BufferPointer<byte> Payload { get; init; }

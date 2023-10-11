@@ -2,7 +2,6 @@
 using Realtime.Controllers.Match.Interfaces;
 using Realtime.Controllers.Transporters.Messages;
 using Realtime.Data;
-using Realtime.Networks;
 using Realtime.Utils.Extensions;
 using Realtime.Utils.Factory;
 
@@ -69,7 +68,7 @@ internal partial class MatchTickManager<TMatchData, TPlayerIndex, TAuthData, TPl
         in Queue<Task> taskQueue,
         in int tick, in int order, in CancellationToken cancellationToken)
     {
-        switch (message.MessageId)
+        switch (message.Opcode)
         {
             case 0:
             {

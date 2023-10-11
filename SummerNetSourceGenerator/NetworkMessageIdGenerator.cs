@@ -7,7 +7,6 @@ using Microsoft.CodeAnalysis.Text;
 
 namespace SummerNetSourceGenerator;
 
-[Generator]
 public class NetworkMessageIdGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
