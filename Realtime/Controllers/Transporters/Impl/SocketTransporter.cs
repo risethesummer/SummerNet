@@ -14,7 +14,7 @@ namespace Realtime.Controllers.Transporters.Impl;
 
 public class SocketTransporter<TPlayerIndex, TAuthData, TPlayer> : ITransporter<TPlayerIndex, TAuthData, TPlayer>
     where TPlayerIndex : unmanaged
-    where TPlayer : PlayerData<TPlayerIndex, TAuthData>, INetworkPayload, new()
+    where TPlayer : PlayerData<TPlayerIndex, TAuthData>
 {
     private readonly MessageDecoder _messageDecoder;
     private readonly MessageEncoder _messageEncoder;
@@ -44,7 +44,7 @@ public class SocketTransporter<TPlayerIndex, TAuthData, TPlayer> : ITransporter<
         return ValueTask.FromResult<>(null);
     }
     public ValueTask SendMessage<T>(in SentNetworkMessage<TPlayerIndex, T> msg,
-        CancellationToken cancellationToken) where T : unmanaged, INetworkPayload
+        CancellationToken cancellationToken)
     {
         if (!_sockets.ContainsKey(msg.AssociatedClient))
             return ValueTask.CompletedTask;
@@ -78,7 +78,7 @@ public class SocketTransporter<TPlayerIndex, TAuthData, TPlayer> : ITransporter<
         }
     }
     public ValueTask SendMessageInline<T>(in SentNetworkMessage<TPlayerIndex, T> msg,
-        CancellationToken cancellationToken) where T : unmanaged, INetworkPayload
+        CancellationToken cancellationToken)
     {
         if (!_sockets.ContainsKey(msg.AssociatedClient))
             return ValueTask.CompletedTask;

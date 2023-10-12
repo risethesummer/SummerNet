@@ -7,7 +7,7 @@ using Realtime.Utils.Factory;
 
 namespace Realtime.Controllers.Match.Impl;
 
-public struct MyMessage : INetworkPayload
+public struct MyMessage
 {
 }
 internal partial class MatchTickManager<TMatchData, TPlayerIndex, TAuthData, TPlayer> 

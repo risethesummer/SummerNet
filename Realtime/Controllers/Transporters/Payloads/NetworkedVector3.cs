@@ -1,9 +1,8 @@
 ﻿using System.Numerics;
-using Realtime.Controllers.Transporters.Messages;
 
 namespace Realtime.Controllers.Transporters.Payloads;
 
-public readonly struct NetworkedVector3 : INetworkPayload
+public readonly struct NetworkedVector3
 {
     public float X { get; init; }
     public float Y { get; init; }

@@ -33,7 +33,6 @@ public class MatchSetup : IMatchSetupRunner<MatchContext, MyMatchData, int, int,
     public async ValueTask<MatchContext> Setup()
     {
         var matchData = await _matchDataProvider.ProvideMatchData();
-        ConfigurationManager.AppSettings["occupation"];
         return new MatchContext
     }
 }
@@ -50,44 +49,17 @@ public class MatchSetup : IMatchSetupRunner<MatchContext, MyMatchData, int, int,
 // var container  = rootBuilder.Build();
 // container.Resolve<>();
 
+
 public class MyPlayerData : PlayerData<int, int>
 { }
 public class MyMatchData : MatchData<int, int, MyPlayerData>
 { }
 
-public interface IDependenciesInstaller : IDisposable
+public interface INetworkBehaviour : IDisposable
 {
-    ILifetimeScope? Install<T>(in T injectable, ILifetimeScope scope) where T : IManagedNetwork;
-}
-
-public interface IManagedNetwork : IDisposable
-{
-    public ILifetimeScope? Scope { set; get; }
-}
-
-public readonly struct NetworkInt : INetworkPayload
-{
-    public int Value { get; init; }
-}
-
-public readonly struct NetworkIndex : INetworkPayload
-{
-    public ulong Value { get; init; }
-    public bool IsValid => Value > 0;
-    public static NetworkIndex Invalid => default;
-    public ulong SequenceIndex => Value - 1;
-}
-
-public interface IMatchObjectManager<TPlayerIndex> where TPlayerIndex : unmanaged
-{
-    IEnumerable<NetworkObject> Objects { get; }
-    // Add and assign networkIndex
-    ValueTask<T> SpawnAsync<T>(NetworkObject? parent, TPlayerIndex? author, IDependenciesInstaller? installer);
-    ValueTask<TBehaviour> RegisterBehaviourAsync<TBehaviour>(NetworkObject networkObject, IDependenciesInstaller? installer) 
-        where TBehaviour : INetworkBehaviour;
-    ValueTask<TBehaviour> RegisterBehaviourAsync<TBehaviour>(NetworkObject networkObject, TBehaviour behaviour) 
-        where TBehaviour : INetworkBehaviour;
-    ValueTask DespawnAsync(NetworkObject networkObject);
+    NetworkObject? NetworkObject { get; }
+    MatchContext? MatchContext { get; }
+    MyPlayerData? Author { get; }
 }
 
 /// <summary>
@@ -99,9 +71,17 @@ public sealed class NetworkObject : IManagedNetwork
     private readonly List<INetworkBehaviour> _behaviours;
     public IReadOnlyList<INetworkBehaviour> Behaviours => _behaviours;
     public bool IsValid => NetworkIndex.IsValid && MatchContext != null;
-    public NetworkIndex NetworkIndex { get; internal set; } //Auto-incremental id
+    public NetworkIndex NetworkIndex { get; init; } //Auto-incremental id
     public MatchContext? MatchContext { get; init; }
-    public MyPlayerData? Author { get; init; }
+    public MyPlayerData? Author { get; set; }
+    public NetworkObject(MatchContext context, List<INetworkBehaviour> behaviours, 
+        NetworkIndex index, MyPlayerData? author)
+    {
+        MatchContext = context;
+        NetworkIndex = index;
+        Author = author;
+        _behaviours = behaviours;
+    }
     public void Dispose()
     {
         Scope?.Dispose();
@@ -113,13 +93,6 @@ public sealed class NetworkObject : IManagedNetwork
         _behaviours.Add(behaviour);
     }
     public ILifetimeScope? Scope { get; set; }
-}
-
-public interface INetworkBehaviour : IDisposable
-{
-    NetworkObject? NetworkObject { get; }
-    MatchContext? MatchContext { get; }
-    MyPlayerData? Author { get; }
 }
 
 public partial class MoveBehaviour : INetworkBehaviour, 

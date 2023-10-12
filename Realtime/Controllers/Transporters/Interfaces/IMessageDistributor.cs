@@ -12,7 +12,8 @@ public interface IMessageDistributor<TPlayerIndex> where TPlayerIndex : unmanage
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
     ValueTask SendMessageInline<T>(in SentNetworkMessage<TPlayerIndex, T> msg,
-        CancellationToken cancellationToken) where T : unmanaged, INetworkPayload;
+        CancellationToken cancellationToken);
+
     /// <summary>
     /// Send a message to the client spontaneously
     /// </summary>
@@ -21,6 +22,6 @@ public interface IMessageDistributor<TPlayerIndex> where TPlayerIndex : unmanage
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
     ValueTask SendMessage<T>(in SentNetworkMessage<TPlayerIndex, T> msg,
-        CancellationToken cancellationToken) where T : unmanaged, INetworkPayload;
+        CancellationToken cancellationToken);
     ValueTask FlushSentMessage(CancellationToken cancellationToken);
 }

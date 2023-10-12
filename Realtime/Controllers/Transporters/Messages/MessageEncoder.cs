@@ -19,7 +19,6 @@ public class MessageEncoder
     }
     public BufferPointer<byte> EncodeNonAlloc<TData>(
         in uint opcode, in TData payload)
-        where TData : INetworkPayload
     {
         // The message always from the server, so no need to attach owner, target and message type
         // We just send: [messageId opcode payloadLength payload]

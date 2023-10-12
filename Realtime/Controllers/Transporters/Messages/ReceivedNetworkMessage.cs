@@ -1,7 +1,6 @@
 ﻿namespace Realtime.Controllers.Transporters.Messages;
 
-public readonly struct ReceivedNetworkMessage<TPlayerIndex, TData> 
-    where TData : INetworkPayload where TPlayerIndex : unmanaged
+public readonly struct ReceivedNetworkMessage<TPlayerIndex, TData> where TPlayerIndex : unmanaged
 {
     public ushort Opcode { get; init; }
     public ulong Tick { get; init; }
