@@ -4,14 +4,8 @@ using Realtime.Utils.Factory;
 
 namespace Realtime.Controllers.Transporters.Messages;
 
-public class MessageEncoder
+public class MessageEncoder : IMessageEncoder
 {
-    private readonly IFactory<BufferPointer<byte>, PoolableWrapper<BufferPointer<byte>, UnmanagedMemoryManager<byte>>> _memoryManagerPool;
-    public MessageEncoder(IFactory<BufferPointer<byte>, PoolableWrapper<BufferPointer<byte>, UnmanagedMemoryManager<byte>>> memoryManagerPool)
-    {
-        _memoryManagerPool = memoryManagerPool;
-    }
-
     private static void SetHeader(ref Span<byte> header, in uint opcode, in uint payloadLength)
     {
         BitConverter.TryWriteBytes(header[NetworkMessageCommonInfo.ServerMsgArgumentPosition.Opcode], opcode); // Write opcode

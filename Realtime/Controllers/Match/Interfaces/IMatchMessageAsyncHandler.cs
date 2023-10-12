@@ -8,6 +8,5 @@ public interface IMatchMessageAsyncHandler<TMessageData, TMatchData, TPlayerInde
     where TMatchData : MatchData<TPlayerIndex, TAuthData, TPlayer>
     where TPlayerIndex : unmanaged
 {
-    ValueTask OnMessage(IMatchContext<TMatchData, TPlayerIndex, TAuthData, TPlayer> matchContext, 
-        ReceivedNetworkMessage<TPlayerIndex, TMessageData> message, CancellationToken cancellationToken);
+    ValueTask OnMessage(ReceivedNetworkMessage<TPlayerIndex, TMessageData> message, CancellationToken cancellationToken);
 }

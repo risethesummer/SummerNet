@@ -13,10 +13,10 @@ public sealed unsafe class UnmanagedMemoryManager<T> : MemoryManager<T>, IPoolab
     private T* _pointer;
     private int _length;
 
-    /// <summary>
-    /// Create a new UnmanagedMemoryManager instance at the given pointer and size
-    /// </summary>
-    /// <remarks>It is assumed that the span provided is already unmanaged or externally pinned</remarks>
+    public UnmanagedMemoryManager(in BufferPointer<T> span) : 
+        this(span.Buffer, span.Length)
+    {
+    }
     public UnmanagedMemoryManager(Span<T> span)
     {
         fixed (T* ptr = &MemoryMarshal.GetReference(span))
@@ -26,9 +26,6 @@ public sealed unsafe class UnmanagedMemoryManager<T> : MemoryManager<T>, IPoolab
         }
     }
 
-    /// <summary>
-    /// Create a new UnmanagedMemoryManager instance at the given pointer and size
-    /// </summary>
     [CLSCompliant(false)]
     public UnmanagedMemoryManager(T* pointer, int length)
     {

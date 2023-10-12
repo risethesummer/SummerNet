@@ -1,12 +1,15 @@
-﻿namespace Realtime.Controllers.Setup.Interfaces;
+﻿using Realtime.Data;
+
+namespace Realtime.Controllers.Setup.Interfaces;
 
 /// <summary>
-/// How to get data from other sources
+/// Provide initial data of a match <br/>
+/// If we don't recognise any implementation, we'll provide a basic one from configurations for you 
 /// </summary>
-/// <typeparam name="TMatchData"></typeparam>
-/// <typeparam name="TPlayerIndex"></typeparam>
-/// <typeparam name="TPlayer"></typeparam>
+/// <typeparam name="TMatchData">Your custom data inherits from <see cref="MatchData{TPlayerIndex,TAuthData,TPlayer}"/></typeparam>
+/// <typeparam name="TPlayerIndex">TId in your <see cref="PlayerData{TId, TAuthData}"/></typeparam>
+/// <typeparam name="TPlayer">Your custom data inherits from <see cref="PlayerData{TId, TAuthData}"/></typeparam>
 public interface IMatchDataProvider<TMatchData, TPlayerIndex, TPlayer>
 {
-    ValueTask<TMatchData> ProvideMatchData();
+    ValueTask<TMatchData?> ProvideMatchData();
 }

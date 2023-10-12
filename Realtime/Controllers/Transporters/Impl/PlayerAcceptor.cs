@@ -14,23 +14,18 @@ public class PlayerAcceptor<TPlayerIndex, TAuthData, TPlayer> : IPlayerAcceptor<
     where TPlayerIndex : unmanaged
 {
     private readonly IConnectionAcceptor _wrappedConnectionAcceptor;
-    private readonly IPlayerAuthenticator<TPlayerIndex, TAuthData, TPlayer> _authenticator;
+    private readonly IPlayerAuthenticator<TPlayerIndex, TAuthData, TPlayer>? 
+        _authenticator;
     private readonly IFactory<BufferPointer<byte>, PoolableWrapper<BufferPointer<byte>, UnmanagedMemoryManager<byte>>>
         _memoryManagerPool;
     public PlayerAcceptor(IConnectionAcceptor wrappedConnectionAcceptor, 
         IFactory<BufferPointer<byte>, PoolableWrapper<BufferPointer<byte>, UnmanagedMemoryManager<byte>>> memoryManagerPool, 
-        IPlayerAuthenticator<TPlayerIndex, TAuthData, TPlayer> authenticator)
+        IPlayerAuthenticator<TPlayerIndex, TAuthData, TPlayer>? authenticator)
     {
         _wrappedConnectionAcceptor = wrappedConnectionAcceptor;
         _memoryManagerPool = memoryManagerPool;
         _authenticator = authenticator;
     }
-    public void Dispose()
-    {
-        _wrappedConnectionAcceptor.Dispose();
-        GC.SuppressFinalize(this);
-    }
-
     public async IAsyncEnumerable<TPlayer> BeginAccepting([EnumeratorCancellation] CancellationToken cancellationToken)
     {
         await foreach (var socket in _wrappedConnectionAcceptor.BeginAccepting(cancellationToken))
@@ -45,7 +40,8 @@ public class PlayerAcceptor<TPlayerIndex, TAuthData, TPlayer> : IPlayerAcceptor<
                     Status = PlayerStatus.Setup,
                     AuthData = authData
                 };
-                playerData = await _authenticator.Authenticate(playerData);
+                if (_authenticator is not null)
+                    playerData = await _authenticator.Authenticate(playerData);
                 if (playerData is null)
                     continue;
                 yield return playerData;

@@ -8,24 +8,24 @@ namespace Realtime.Controllers.Transporters.Impl;
 public class RawSocketConnectionAcceptor : IConnectionAcceptor
 {
     private readonly Socket _acceptSocket;
-    public RawSocketConnectionAcceptor(Socket acceptSocket)
+    public RawSocketConnectionAcceptor(IPEndPoint endPoint, 
+        int maxListen)
     {
-        _acceptSocket = acceptSocket;
+        _acceptSocket = new Socket(
+            endPoint.AddressFamily, 
+            SocketType.Stream,
+            ProtocolType.Tcp);
+        _acceptSocket.Bind(endPoint);
+        _acceptSocket.Listen(maxListen);
     }
     public void Dispose()
     {
         _acceptSocket.Dispose();
         GC.SuppressFinalize(this);
     }
-    public static RawSocketAdapter CreateTcpListener(IPEndPoint endPoint, int maxListen)
+    public void Shutdown()
     {
-        using Socket listener = new(
-            endPoint.AddressFamily, 
-            SocketType.Stream, 
-            ProtocolType.Tcp);
-        listener.Bind(endPoint);
-        listener.Listen(maxListen);
-        return new RawSocketAdapter(listener);
+        _acceptSocket.Shutdown(SocketShutdown.Both);
     }
     public async IAsyncEnumerable<ISocket> BeginAccepting([EnumeratorCancellation] CancellationToken cancellationToken)
     {
@@ -34,5 +34,6 @@ public class RawSocketConnectionAcceptor : IConnectionAcceptor
             var accept = await _acceptSocket.AcceptAsync(cancellationToken).ConfigureAwait(false);
             yield return new RawSocketAdapter(accept);
         }
+        Shutdown();
     }
 }

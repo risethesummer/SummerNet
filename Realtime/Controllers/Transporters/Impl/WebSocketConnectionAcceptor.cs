@@ -29,11 +29,12 @@ public class WebSocketConnectionAcceptor : IConnectionAcceptor
             if (sock is not null)
                 yield return sock;
         }
+        _httpListener.Stop();
     }
 
     private async ValueTask<ISocket?> AcceptAsync(CancellationToken cancellationToken)
     {
-
+        _httpListener.Start();
         var context = await _httpListener.GetContextAsync();
         if (!context.Request.IsWebSocketRequest) 
             return null;

@@ -8,6 +8,10 @@ public class ParallelBuffer<TWrappedData> : IDisposable
     private AutoSizeBuffer<TWrappedData> _buffer;
     private readonly SemaphoreSlim _semaphoreSlim = new(0, 1);
     private readonly UnmanagedMemoryManager<TWrappedData> _memoryManager;
+    public ParallelBuffer(UnmanagedMemoryManager<TWrappedData> memoryManager)
+    {
+        _memoryManager = memoryManager;
+    }
     public async ValueTask AddToBuffer(TWrappedData data, CancellationToken token)
     {
         try
@@ -44,13 +48,13 @@ public class ParallelBuffer<TWrappedData> : IDisposable
         _buffer.Clear();
     }
 
-    public async ValueTask<AutoDisposableData<Memory<TWrappedData>, SemaphoreReleaser>> GetBuffer(
+    public async ValueTask<AutoDisposableData<ReadOnlyMemory<TWrappedData>, SemaphoreReleaser>> GetBuffer(
         CancellationToken token)
     {
         await _semaphoreSlim.WaitAsync(token).ConfigureAwait(false);
         _memoryManager.Initialize(_buffer.BufferPointer);
-        var memoryBuffer = _memoryManager.Memory;
-        return new AutoDisposableData<Memory<TWrappedData>, SemaphoreReleaser>(memoryBuffer, 
+        var memoryBuffer = _memoryManager.ForgetMemory;
+        return new AutoDisposableData<ReadOnlyMemory<TWrappedData>, SemaphoreReleaser>(memoryBuffer, 
             new SemaphoreReleaser(_semaphoreSlim));
     }
 

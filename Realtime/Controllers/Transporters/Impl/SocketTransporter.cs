@@ -12,21 +12,33 @@ namespace Realtime.Controllers.Transporters.Impl;
 
 // Decode into segment
 
-public class SocketTransporter<TPlayerIndex, TAuthData, TPlayer> : ITransporter<TPlayerIndex, TAuthData, TPlayer>
+public class SocketTransporter<TPlayerIndex, TAuthData, TPlayer> : 
+    ITransporter<TPlayerIndex, TAuthData, TPlayer>, IDisposable
     where TPlayerIndex : unmanaged
     where TPlayer : PlayerData<TPlayerIndex, TAuthData>
 {
-    private readonly MessageDecoder _messageDecoder;
-    private readonly MessageEncoder _messageEncoder;
+    private readonly IMessageDecoder _messageDecoder;
+    private readonly IMessageEncoder _messageEncoder;
     private readonly ParallelBuffer<RawReceivedNetworkMessage<TPlayerIndex>> _receivedParallelBufferWrapper;
     private readonly ParallelBuffer<DecodedSentMessage<TPlayerIndex>> _sentParallelBufferWrapper;
+    private readonly IFactory<PoolableWrapper<DisposableQueue<Task>>> _taskPool;
+    private readonly IFactory<BufferPointer<byte>, 
+        PoolableWrapper<BufferPointer<byte>, UnmanagedMemoryManager<byte>>> _memoryManagerPool;
     private readonly ConcurrentDictionary<TPlayerIndex, ISocket> _sockets = new();
     private readonly List<TPlayerIndex> _indexToPlayerIndex = new();
-    private readonly IPlayerAuthenticator<TPlayerIndex, TAuthData, TPlayer> _authenticator;
-    private readonly IFactory<uint, PoolableWrapper<uint, AutoSizeBuffer<byte>>> _bufferPool;
-    private readonly IFactory<PoolableWrapper<DisposableQueue<Task>>> _taskPool;
-    private readonly IFactory<BufferPointer<byte>,
-        PoolableWrapper<BufferPointer<byte>, UnmanagedMemoryManager<byte>>> _memoryManagerPool;
+    public SocketTransporter(IMessageDecoder messageDecoder, IMessageEncoder messageEncoder, 
+        ParallelBuffer<RawReceivedNetworkMessage<TPlayerIndex>> receivedParallelBufferWrapper, 
+        ParallelBuffer<DecodedSentMessage<TPlayerIndex>> sentParallelBufferWrapper, 
+        IFactory<PoolableWrapper<DisposableQueue<Task>>> taskPool, 
+        IFactory<BufferPointer<byte>, PoolableWrapper<BufferPointer<byte>, UnmanagedMemoryManager<byte>>> memoryManagerPool)
+    {
+        _messageDecoder = messageDecoder;
+        _messageEncoder = messageEncoder;
+        _receivedParallelBufferWrapper = receivedParallelBufferWrapper;
+        _sentParallelBufferWrapper = sentParallelBufferWrapper;
+        _taskPool = taskPool;
+        _memoryManagerPool = memoryManagerPool;
+    }
     public async ValueTask RemovePlayerAsync(TPlayerIndex target, CancellationToken cancellationToken)
     {
         if (!_sockets.TryGetValue(target, out var socket))
@@ -111,7 +123,7 @@ public class SocketTransporter<TPlayerIndex, TAuthData, TPlayer> : ITransporter<
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void SendMessagesToQueue(in Memory<DecodedSentMessage<TPlayerIndex>> messages,
+    private void SendMessagesToQueue(in ReadOnlyMemory<DecodedSentMessage<TPlayerIndex>> messages,
         in Queue<Task> queue, in CancellationToken cancellationToken)
     {
         using var memoryManagerWrapper = _memoryManagerPool.Create(new BufferPointer<byte>());
@@ -156,6 +168,11 @@ public class SocketTransporter<TPlayerIndex, TAuthData, TPlayer> : ITransporter<
     {
         _receivedParallelBufferWrapper.Clear();
         _sentParallelBufferWrapper.Clear();
+    }
+
+    public ValueTask Shutdown()
+    {
+        throw new NotImplementedException();
     }
 
     public async ValueTask<ReadOnlyMemory<RawReceivedNetworkMessage<TPlayerIndex>>> FlushReceivedMessagesAsync(CancellationToken cancellationToken)
@@ -244,5 +261,13 @@ public class SocketTransporter<TPlayerIndex, TAuthData, TPlayer> : ITransporter<
                 _previousNotPrecessedMemories[ownerIndex] = memoryManager.ForgetMemory;
             }
         }
+    }
+
+    public void Dispose()
+    {
+        _receivedParallelBufferWrapper.Dispose();
+        _sentParallelBufferWrapper.Dispose();
+        foreach (var socket in _sockets)
+            socket.Value.Dispose();
     }
 }

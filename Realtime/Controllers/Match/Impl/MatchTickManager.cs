@@ -1,5 +1,6 @@
 ﻿using MemoryPack;
 using Realtime.Controllers.Match.Interfaces;
+using Realtime.Controllers.Transporters.Interfaces;
 using Realtime.Controllers.Transporters.Messages;
 using Realtime.Data;
 using Realtime.Utils.Extensions;
@@ -7,17 +8,41 @@ using Realtime.Utils.Factory;
 
 namespace Realtime.Controllers.Match.Impl;
 
-public struct MyMessage
-{
-}
-internal partial class MatchTickManager<TMatchData, TPlayerIndex, TAuthData, TPlayer> 
-    where TPlayer : PlayerData<TPlayerIndex, TAuthData>
+
+public interface IMatchTickManager<TMatchData, TPlayerIndex, TAuthData, TPlayer> 
+    where TPlayer : PlayerData<TPlayerIndex, TAuthData>, new()
     where TMatchData : MatchData<TPlayerIndex, TAuthData, TPlayer>
     where TPlayerIndex : unmanaged
 {
-    private readonly IEnumerable<IMatchTickHandler<TMatchData, TPlayerIndex, TAuthData, TPlayer>> _tickHandlers;
-    private readonly IMatchContext<TMatchData, TPlayerIndex, TAuthData, TPlayer> _matchContext;
+    public ValueTask Tick(IMatchContext<TMatchData, TPlayerIndex, TAuthData, TPlayer> matchContext,
+        CancellationToken token);
+    void AddHandler<TMessage>(IMatchMessageHandler<TMessage, TPlayerIndex> handler);
+    void AddHandler(IMatchTickHandler<TMatchData, TPlayerIndex, TAuthData, TPlayer> handler);
+}
+public partial class MatchTickManager<TMatchData, TPlayerIndex, TAuthData, TPlayer> : IMatchTickManager<TMatchData, TPlayerIndex, TAuthData, TPlayer>
+    where TPlayer : PlayerData<TPlayerIndex, TAuthData>, new()
+    where TMatchData : MatchData<TPlayerIndex, TAuthData, TPlayer>
+    where TPlayerIndex : unmanaged
+{
+    private readonly List<IMatchTickHandler<TMatchData, TPlayerIndex, TAuthData, TPlayer>> _tickHandlers;
+    private readonly ITransporter<TPlayerIndex, TAuthData, TPlayer> _matchContext;
     private readonly MatchTickCounter _matchTickCounter;
+    private readonly UnmanagedMemoryManager<byte> _memoryManager;
+    private readonly Queue<Task> _receivedTasks = new();
+    public MatchTickManager(ITransporter<TPlayerIndex, TAuthData, TPlayer> matchContext, MatchTickCounter matchTickCounter, 
+        UnmanagedMemoryManager<byte> memoryManager)
+    {
+        _matchContext = matchContext;
+        _matchTickCounter = matchTickCounter;
+        _memoryManager = memoryManager;
+    }
+
+
+
+    public void AddHandler(IMatchTickHandler<TMatchData, TPlayerIndex, TAuthData, TPlayer> handler)
+    {
+        _tickHandlers.Add(handler);
+    }
 
     // Generate code to call _msgReceiver.Flush() => Flush()
     // Generate all message handlers of tick
@@ -27,25 +52,60 @@ internal partial class MatchTickManager<TMatchData, TPlayerIndex, TAuthData, TPl
  
     // Generated
     // Base on opcode 0
-    private readonly IMatchMessageHandler<MyMessage, TMatchData, TPlayerIndex, TAuthData, TPlayer>[] _0MessageHandlers;
+    public struct MyMessage
+    {
+    }
+    private readonly IMatchMessageHandler<MyMessage, TPlayerIndex>[] _0MessageHandlers;
     private readonly IEnumerable<IMatchMessageAsyncHandler<MyMessage, TMatchData, TPlayerIndex, TAuthData, TPlayer>> _0MessageAsyncHandlers;
-    
+    public void AddHandler<TMessage>(IMatchMessageHandler<TMessage, TPlayerIndex> handler)
+    {
+        
+    }
+    private partial void ReceiveMessage(in RawReceivedNetworkMessage<TPlayerIndex> message,
+        in Queue<Task> taskQueue,
+        in ulong tick, in ushort order, in CancellationToken cancellationToken)
+    {
+        switch (message.Opcode)
+        {
+            case 0:
+            {
+                var byteData = message.Payload.GetMemory(_memoryManager);
+                var msg = new ReceivedNetworkMessage<TPlayerIndex, MyMessage>
+                {
+                    Opcode = message.Opcode,
+                    AssociatedClient = message.Owner,
+                    Payload = MemoryPackSerializer.Deserialize<MyMessage>(byteData.Span),
+                    Tick = tick,
+                    OrderInTick = order,
+                    MessageType = MessageType.ClientToSever
+                };
+                foreach (var handler in _0MessageHandlers)
+                    handler.OnMessage(msg);
+                foreach (var handler in _0MessageAsyncHandlers)
+                    taskQueue.Enqueue(handler.OnMessage(msg, cancellationToken).AsTask());
+                byteData.Free();
+                break;
+            }
+        }
+    }
     // private readonly IEnumerable<IMatchMessageHandler<MyMessage, TMatchData, TPlayerIndex, TAuthData, TPlayer>>
     //     _myMessageHandlers;    
     // private readonly IEnumerable<IMatchMessageAsyncHandler<MyMessage, TMatchData, TPlayerIndex, TAuthData, TPlayer>>
     //     _myMessageAsyncHandlers;
-    
-    private readonly UnmanagedMemoryManager<byte> memoryManager;
-    private readonly Queue<Task> receivedTasks;
+
+
+    private partial void ReceiveMessage(in RawReceivedNetworkMessage<TPlayerIndex> message,
+        in Queue<Task> taskQueue,
+        in ulong tick, in ushort order, in CancellationToken cancellationToken);
     private async ValueTask ReceiveMessagesAsync(CancellationToken cancellationToken)
     {
         var tick = _matchTickCounter.Tick;
         var data = await _matchContext.FlushReceivedMessagesAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            receivedTasks.Clear();
-            ReceiveMessages(data, receivedTasks, tick, cancellationToken);
-            await Task.WhenAll(receivedTasks).ConfigureAwait(false);
+            _receivedTasks.Clear();
+            ReceiveMessages(data, _receivedTasks, tick, cancellationToken);
+            await Task.WhenAll(_receivedTasks).ConfigureAwait(false);
         }
         finally
         {
@@ -66,36 +126,6 @@ internal partial class MatchTickManager<TMatchData, TPlayerIndex, TAuthData, TPl
             order++;
         }
     }
-
-    // This method is intended to be generated
-    private void ReceiveMessage(in RawReceivedNetworkMessage<TPlayerIndex> message,
-        in Queue<Task> taskQueue,
-        in ulong tick, in ushort order, in CancellationToken cancellationToken)
-    {
-        switch (message.Opcode)
-        {
-            case 0:
-            {
-                var byteData = message.Payload.GetMemory(memoryManager);
-                var msg = new ReceivedNetworkMessage<TPlayerIndex, MyMessage>
-                {
-                    Opcode = message.Opcode,
-                    AssociatedClient = message.Owner,
-                    Payload = MemoryPackSerializer.Deserialize<MyMessage>(byteData.Span),
-                    Tick = tick,
-                    OrderInTick = order,
-                    MessageType = MessageType.ClientToSever
-                };
-                foreach (var handler in _0MessageHandlers)
-                    handler.OnMessage(_matchContext, msg);
-                foreach (var handler in _0MessageAsyncHandlers)
-                    taskQueue.Enqueue(handler.OnMessage(_matchContext, msg, cancellationToken).AsTask());
-                byteData.Free();
-                break;
-            }
-        }
-    }
-
 
     // Reset StartReceivingMessagesForNewTick
     // Call StartReceivingMessagesForNewTick
@@ -120,4 +150,6 @@ internal partial class MatchTickManager<TMatchData, TPlayerIndex, TAuthData, TPl
         await _matchTickCounter.EndTick(token).ConfigureAwait(false);
         _matchContext.Clear();
     }
+
+ 
 }
