@@ -1,5 +1,5 @@
 using MemoryPack;
-using Realtime.Controllers.Transporters.Interfaces;
+using Realtime.Transporters.Interfaces;
 using Realtime.Utils.Buffers;
 using Realtime.Utils.Factory;
 

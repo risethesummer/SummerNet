@@ -1,5 +1,5 @@
 ﻿using System.Net;
-using Realtime.Controllers.Filters.Interfaces;
+using Realtime.Filters.Interfaces;
 
 namespace Realtime.Data;
 

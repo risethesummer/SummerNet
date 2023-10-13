@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Immutable;
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -16,7 +18,40 @@ public static class RoslynExtensions
         }
         return false;
     }
-    
+
+    private static string FormArguments(ImmutableArray<ITypeSymbol> arguments)
+    {
+        if (arguments.Length == 0)
+            return "";
+        if (arguments.Length == 1)
+            return arguments[0].ToDisplayString();
+        return string.Join(", ", arguments.Select(e => e.ToDisplayString()));
+    } 
+
+    public static INamedTypeSymbol? InheritClass(this INamedTypeSymbol symbol, string baseName, int genericCount = 0)
+    {
+        if (symbol.ToDisplayString() == baseName)
+            return symbol;
+        var baseType = symbol.BaseType;
+        while (baseType is not null)
+        {
+            if (genericCount == 0 || baseType.TypeParameters.Length == genericCount)
+            {
+                var compareName = baseName;
+                if (genericCount > 0)
+                    compareName = $"{baseName}<{FormArguments(baseType.TypeArguments)}>";
+                if (baseType.ToDisplayString() == compareName)
+                    return baseType;
+            }
+            baseType = baseType.BaseType;
+        }
+        return null;
+    }
+
+    public static INamedTypeSymbol? GetNamedTypeSymbol(this GeneratorSyntaxContext context)
+    {
+        return context.SemanticModel.GetDeclaredSymbol(context.Node) as INamedTypeSymbol;
+    }
     public static INamedTypeSymbol? GetClassOrStructInheritInherit(this GeneratorSyntaxContext context, string interfaceName, bool goDeep)
     {
         var symbol = context.SemanticModel.GetDeclaredSymbol(context.Node);

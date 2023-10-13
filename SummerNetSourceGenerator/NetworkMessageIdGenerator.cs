@@ -18,7 +18,7 @@ public class NetworkMessageIdGenerator : IIncrementalGenerator
                     ctx.GetClassOrStructInheritInherit(GeneratorUtilities.Realtime.Networks.INetworkPayload, true))
             .Where(t => t is not null)
             .Collect();
-        context.RegisterSourceOutput(provider, GenerateCode);
+        // context.RegisterSourceOutput(provider, GenerateCode);
     }
     private void GenerateCode(SourceProductionContext spc, ImmutableArray<INamedTypeSymbol?> networkPayloadTypes)
     {

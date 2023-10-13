@@ -9,7 +9,6 @@
 /// <typeparam name="TPlayer">The type of custom <see cref="PlayerData{TId,TAuthData}"/> you has defined</typeparam>
 public class MatchData<TPlayerIndex, TAuthData, TPlayer> 
     where TPlayer : PlayerData<TPlayerIndex, TAuthData> 
-    where TPlayerIndex : unmanaged
 {
     public string Id { get; init; } = Guid.NewGuid().ToString();
     public required DateTime CreatedTime { get; init; } = DateTime.Now;
