@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
-namespace SummerNetSourceGenerator;
+namespace SourceGenerator;
 
 [Generator]
 public class RealtimeComponentsGenerator : IIncrementalGenerator

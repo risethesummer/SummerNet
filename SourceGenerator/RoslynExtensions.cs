@@ -4,7 +4,7 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace SummerNetSourceGenerator;
+namespace SourceGenerator;
 
 public static class RoslynExtensions
 {

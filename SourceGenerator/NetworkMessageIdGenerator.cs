@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
 
-namespace SummerNetSourceGenerator;
+namespace SourceGenerator;
 
 public class NetworkMessageIdGenerator : IIncrementalGenerator
 {
